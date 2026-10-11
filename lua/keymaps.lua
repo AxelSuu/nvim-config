@@ -23,12 +23,7 @@ map("n", "<leader>fh", "<cmd>Telescope help_tags<CR>")
 -- File tree
 map("n", "<leader>e", "<cmd>NvimTreeToggle<CR>")
 
--- LSP (applied after LSP attaches, see lsp config)
-map("n", "gd", vim.lsp.buf.definition)
-map("n", "gr", vim.lsp.buf.references)
-map("n", "K",  vim.lsp.buf.hover)
-map("n", "<leader>ca", vim.lsp.buf.code_action)
-map("n", "<leader>rn", vim.lsp.buf.rename)
+-- Diagnostics (LSP maps are set on LspAttach, see plugins/lsp.lua)
 map("n", "<leader>d", vim.diagnostic.open_float)
 map("n", "[d", vim.diagnostic.goto_prev)
 map("n", "]d", vim.diagnostic.goto_next)
