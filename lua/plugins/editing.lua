@@ -1,17 +1,35 @@
 return {
-  { "windwp/nvim-autopairs",
+  {
+    "windwp/nvim-autopairs",
     event = "InsertEnter",
-    config = function() require("nvim-autopairs").setup() end },
-  { "numToStr/Comment.nvim",
-    config = function() require("Comment").setup() end },
-  { "kylechui/nvim-surround",
-    config = function() require("nvim-surround").setup() end },
-  { "folke/which-key.nvim",
-    config = function() require("which-key").setup() end },
+    config = function()
+      require("nvim-autopairs").setup()
+    end,
+  },
+  {
+    "numToStr/Comment.nvim",
+    config = function()
+      require("Comment").setup()
+    end,
+  },
+  {
+    "kylechui/nvim-surround",
+    config = function()
+      require("nvim-surround").setup()
+    end,
+  },
+  {
+    "folke/which-key.nvim",
+    config = function()
+      require("which-key").setup()
+    end,
+  },
   {
     "lukas-reineke/indent-blankline.nvim",
     main = "ibl",
-    config = function() require("ibl").setup() end,
+    config = function()
+      require("ibl").setup()
+    end,
   },
   {
     "akinsho/toggleterm.nvim",
@@ -27,6 +45,8 @@ return {
   {
     "folke/trouble.nvim",
     dependencies = { "nvim-tree/nvim-web-devicons" },
-    config = function() require("trouble").setup() end,
+    config = function()
+      require("trouble").setup()
+    end,
   },
 }

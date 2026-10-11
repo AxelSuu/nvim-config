@@ -1,7 +1,7 @@
 local opt = vim.opt
 
-opt.number = true           -- line numbers
-opt.relativenumber = true   -- relative line numbers
+opt.number = true -- line numbers
+opt.relativenumber = true -- relative line numbers
 opt.tabstop = 4
 opt.shiftwidth = 4
 opt.expandtab = true
@@ -20,4 +20,4 @@ opt.colorcolumn = "100"
 opt.splitright = true
 opt.splitbelow = true
 opt.mouse = "a"
-opt.clipboard = "unnamedplus"  -- use system clipboard
+opt.clipboard = "unnamedplus" -- use system clipboard

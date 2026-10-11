@@ -27,7 +27,9 @@ return {
       registry.refresh(function()
         for _, name in ipairs(mason_tools) do
           local pkg = registry.get_package(name)
-          if not pkg:is_installed() then pkg:install() end
+          if not pkg:is_installed() then
+            pkg:install()
+          end
         end
       end)
     end,

@@ -16,12 +16,18 @@ return {
           map("n", "<leader>hu", gs.undo_stage_hunk, "Undo stage hunk")
           map("n", "<leader>hR", gs.reset_buffer, "Reset buffer")
           map("n", "<leader>hp", gs.preview_hunk, "Preview hunk")
-          map("n", "<leader>hb", function() gs.blame_line({ full = true }) end, "Blame line")
+          map("n", "<leader>hb", function()
+            gs.blame_line({ full = true })
+          end, "Blame line")
           map("n", "<leader>hd", gs.diffthis, "Diff this")
-          map("v", "<leader>hs", function() gs.stage_hunk({ vim.fn.line("."), vim.fn.line("v") }) end, "Stage hunk")
-          map("v", "<leader>hr", function() gs.reset_hunk({ vim.fn.line("."), vim.fn.line("v") }) end, "Reset hunk")
+          map("v", "<leader>hs", function()
+            gs.stage_hunk({ vim.fn.line("."), vim.fn.line("v") })
+          end, "Stage hunk")
+          map("v", "<leader>hr", function()
+            gs.reset_hunk({ vim.fn.line("."), vim.fn.line("v") })
+          end, "Reset hunk")
         end,
       })
     end,
-  }
+  },
 }
