@@ -35,6 +35,7 @@ return {
         return "clangd"
       end
 
+      vim.lsp.config("*", { capabilities = require("blink.cmp").get_lsp_capabilities() })
       vim.lsp.config("clangd", {
         cmd = function(dispatchers, config)
           return vim.lsp.rpc.start({
@@ -71,45 +72,36 @@ return {
     end,
   },
   {
-    "hrsh7th/nvim-cmp",
-    dependencies = {
-      "hrsh7th/cmp-nvim-lsp",
-      "hrsh7th/cmp-buffer",
-      "hrsh7th/cmp-path",
-      "L3MON4D3/LuaSnip",
-      "saadparwaiz1/cmp_luasnip",
-      "rafamadriz/friendly-snippets",
-    },
-    config = function()
-      local cmp = require("cmp")
-      local luasnip = require("luasnip")
-      require("luasnip.loaders.from_vscode").lazy_load()
-      cmp.setup({
-        snippet = {
-          expand = function(args)
-            luasnip.lsp_expand(args.body)
-          end,
+    "saghen/blink.cmp",
+    version = "1.*",
+    event = { "InsertEnter", "CmdlineEnter" },
+    dependencies = { "rafamadriz/friendly-snippets" },
+    opts = {
+      -- Same keys as the old nvim-cmp setup
+      keymap = {
+        preset = "none",
+        ["<C-Space>"] = { "show", "show_documentation", "hide_documentation" },
+        ["<CR>"] = { "accept", "fallback" },
+        ["<Tab>"] = { "select_next", "snippet_forward", "fallback" },
+        ["<S-Tab>"] = { "select_prev", "snippet_backward", "fallback" },
+        ["<C-n>"] = { "select_next", "fallback" },
+        ["<C-p>"] = { "select_prev", "fallback" },
+        ["<C-y>"] = { "select_and_accept" },
+        ["<C-e>"] = { "hide", "fallback" },
+        ["<C-b>"] = { "scroll_documentation_up", "fallback" },
+        ["<C-f>"] = { "scroll_documentation_down", "fallback" },
+      },
+      completion = {
+        list = { selection = { preselect = false } },
+        documentation = { auto_show = true, auto_show_delay_ms = 300 },
+      },
+      signature = { enabled = true },
+      sources = {
+        default = { "lazydev", "lsp", "path", "snippets", "buffer" },
+        providers = {
+          lazydev = { name = "LazyDev", module = "lazydev.integrations.blink", score_offset = 100 },
         },
-        mapping = cmp.mapping.preset.insert({
-          ["<C-Space>"] = cmp.mapping.complete(),
-          ["<CR>"] = cmp.mapping.confirm({ select = true }),
-          ["<Tab>"] = cmp.mapping(function(fallback)
-            if cmp.visible() then
-              cmp.select_next_item()
-            elseif luasnip.expand_or_jumpable() then
-              luasnip.expand_or_jump()
-            else
-              fallback()
-            end
-          end, { "i", "s" }),
-        }),
-        sources = cmp.config.sources({
-          { name = "nvim_lsp" },
-          { name = "luasnip" },
-          { name = "buffer" },
-          { name = "path" },
-        }),
-      })
-    end,
+      },
+    },
   },
 }
