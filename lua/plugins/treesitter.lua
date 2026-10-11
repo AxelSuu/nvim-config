@@ -5,13 +5,16 @@ return {
     lazy = false,
     config = function()
       require("nvim-treesitter").install({
-        "c", "lua", "python", "bash", "json", "yaml", "markdown",
+        "c", "cpp", "rust", "python", "typescript", "tsx", "javascript", "lua", "luadoc",
+        "bash", "json", "yaml", "toml", "markdown", "markdown_inline", "cmake", "make",
+        "kconfig", "linkerscript", "devicetree", "asm", "diff", "gitcommit", "git_rebase",
+        "html", "css", "regex", "vim", "vimdoc", "query",
       })
 
+      -- Start highlighting for any filetype that has a parser
       vim.api.nvim_create_autocmd("FileType", {
-        pattern = { "c", "lua", "python", "bash", "sh", "json", "yaml", "markdown" },
-        callback = function()
-          vim.treesitter.start()
+        callback = function(ev)
+          pcall(vim.treesitter.start, ev.buf)
         end,
       })
     end,
