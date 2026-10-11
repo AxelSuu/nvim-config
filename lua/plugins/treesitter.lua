@@ -54,51 +54,28 @@ return {
         move = { set_jumps = true },
       })
 
-      -- select
-      vim.keymap.set({ "x", "o" }, "af", function()
-        require("nvim-treesitter-textobjects.select").select_textobject(
-          "@function.outer",
-          "textobjects"
-        )
-      end)
-      vim.keymap.set({ "x", "o" }, "if", function()
-        require("nvim-treesitter-textobjects.select").select_textobject(
-          "@function.inner",
-          "textobjects"
-        )
-      end)
-      vim.keymap.set({ "x", "o" }, "ac", function()
-        require("nvim-treesitter-textobjects.select").select_textobject(
-          "@class.outer",
-          "textobjects"
-        )
-      end)
-      vim.keymap.set({ "x", "o" }, "ic", function()
-        require("nvim-treesitter-textobjects.select").select_textobject(
-          "@class.inner",
-          "textobjects"
-        )
-      end)
+      local select = require("nvim-treesitter-textobjects.select")
+      local move = require("nvim-treesitter-textobjects.move")
 
-      -- move
-      vim.keymap.set({ "n", "x", "o" }, "]f", function()
-        require("nvim-treesitter-textobjects.move").goto_next_start(
-          "@function.outer",
-          "textobjects"
-        )
-      end)
-      vim.keymap.set({ "n", "x", "o" }, "]c", function()
-        require("nvim-treesitter-textobjects.move").goto_next_start("@class.outer", "textobjects")
-      end)
-      vim.keymap.set({ "n", "x", "o" }, "[f", function()
-        require("nvim-treesitter-textobjects.move").goto_prev_start(
-          "@function.outer",
-          "textobjects"
-        )
-      end)
-      vim.keymap.set({ "n", "x", "o" }, "[c", function()
-        require("nvim-treesitter-textobjects.move").goto_prev_start("@class.outer", "textobjects")
-      end)
+      -- select (Helix mi/ma): f function, c class, a argument
+      for key, obj in pairs({ f = "function", c = "class", a = "parameter" }) do
+        vim.keymap.set({ "x", "o" }, "a" .. key, function()
+          select.select_textobject("@" .. obj .. ".outer", "textobjects")
+        end)
+        vim.keymap.set({ "x", "o" }, "i" .. key, function()
+          select.select_textobject("@" .. obj .. ".inner", "textobjects")
+        end)
+      end
+
+      -- move (Helix ]f ]t); ]c [c stay free for diff hunks
+      for key, obj in pairs({ f = "@function.outer", t = "@class.outer" }) do
+        vim.keymap.set({ "n", "x", "o" }, "]" .. key, function()
+          move.goto_next_start(obj, "textobjects")
+        end)
+        vim.keymap.set({ "n", "x", "o" }, "[" .. key, function()
+          move.goto_prev_start(obj, "textobjects")
+        end)
+      end
     end,
   },
 }

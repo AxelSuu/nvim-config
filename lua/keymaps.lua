@@ -23,10 +23,8 @@ map("n", "<leader>fh", "<cmd>Telescope help_tags<CR>")
 -- File tree
 map("n", "<leader>e", "<cmd>NvimTreeToggle<CR>")
 
--- Diagnostics (LSP maps are set on LspAttach, see plugins/lsp.lua)
+-- Diagnostics ([d ]d are built in; LSP maps are set on LspAttach, see plugins/lsp.lua)
 map("n", "<leader>d", vim.diagnostic.open_float)
-map("n", "[d", vim.diagnostic.goto_prev)
-map("n", "]d", vim.diagnostic.goto_next)
 
 -- Trouble (diagnostics panel)
 map("n", "<leader>xx", "<cmd>Trouble diagnostics toggle<CR>")
