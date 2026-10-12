@@ -14,9 +14,17 @@ return {
   },
   {
     "folke/which-key.nvim",
-    config = function()
-      require("which-key").setup()
-    end,
+    event = "VeryLazy",
+    opts = {
+      preset = "helix",
+      spec = {
+        { "<leader>c", group = "code" },
+        { "<leader>f", group = "find" },
+        { "<leader>h", group = "git hunk" },
+        { "<leader>r", group = "rename" },
+        { "<leader>x", group = "trouble" },
+      },
+    },
   },
   {
     "lukas-reineke/indent-blankline.nvim",
