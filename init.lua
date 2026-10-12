@@ -29,4 +29,4 @@ require("lazy").setup("plugins", {
 vim.cmd.packadd("nvim.undotree")
 vim.cmd.packadd("nvim.difftool")
 
-require("idf")
+require("esp")
