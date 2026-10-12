@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# Print the activation script of the ESP-IDF installation selected in EIM (newest one as fallback).
+python3 -I - <<'PY' 2>/dev/null || ls ~/.espressif/tools/activate_idf_v*.sh 2>/dev/null | tail -1
+import json, os
+d = json.load(open(os.path.expanduser("~/.espressif/tools/eim_idf.json")))
+sel = [i for i in d["idfInstalled"] if i["id"] == d["idfSelectedId"]]
+print(sel[0]["activationScript"])
+PY

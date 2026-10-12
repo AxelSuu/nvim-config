@@ -1,14 +1,44 @@
 -- Shared helpers: ESP-IDF environment, project lookup, floating views
 local M = {}
 
+-- The ESP-IDF installation selected in EIM (eim_idf.json), or the newest one installed
+function M.install()
+  local home = vim.fn.expand("~")
+  local ok, data = pcall(function()
+    return vim.json.decode(
+      table.concat(vim.fn.readfile(home .. "/.espressif/tools/eim_idf.json"), "\n")
+    )
+  end)
+  if ok and type(data) == "table" then
+    for _, i in ipairs(data.idfInstalled or {}) do
+      if
+        i.id == data.idfSelectedId
+        and i.activationScript
+        and vim.uv.fs_stat(i.activationScript)
+      then
+        return { activate = i.activationScript, path = i.path, version = i.name }
+      end
+    end
+  end
+  local scripts = vim.fn.glob(home .. "/.espressif/tools/activate_idf_v*.sh", false, true)
+  local script = scripts[#scripts]
+  local version = script and script:match("activate_idf_(v[%d.]+)%.sh")
+  return script
+    and {
+      activate = script,
+      path = home .. "/.espressif/" .. version .. "/esp-idf",
+      version = version,
+    }
+end
+
 function M.activate_script()
-  local found = vim.fn.glob(vim.fn.expand("~/.espressif/tools/activate_idf_v*.sh"), false, true)
-  return found[#found]
+  local i = M.install()
+  return i and i.activate
 end
 
 function M.idf_path()
-  local found = vim.fn.glob(vim.fn.expand("~/.espressif/v*/esp-idf"), false, true)
-  return found[#found]
+  local i = M.install()
+  return i and i.path
 end
 
 -- Shell command that runs idf.py (or any command) inside the ESP-IDF environment

@@ -6,7 +6,7 @@ set -euo pipefail
 port=${1:-}
 shift || true
 here=$(cd "$(dirname "$0")" && pwd)
-activate=$(ls ~/.espressif/tools/activate_idf_v*.sh 2>/dev/null | tail -1)
+activate=$("$(dirname "$0")/esp-env")
 [ -n "$activate" ] || { echo "ESP-IDF activation script not found" >&2; exit 1; }
 [ -f sdkconfig ] || { echo "no sdkconfig: run from a configured ESP-IDF project (idf.py set-target)" >&2; exit 1; }
 compgen -G "pytest_*.py" >/dev/null || { echo "no pytest_*.py in this project" >&2; exit 1; }

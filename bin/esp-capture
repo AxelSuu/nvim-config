@@ -9,7 +9,7 @@ qemu=
 if [ "${1:-}" = "--qemu" ]; then qemu=1; shift; fi
 secs=${1:-15}
 port=${2:-}
-activate=$(ls ~/.espressif/tools/activate_idf_v*.sh 2>/dev/null | tail -1)
+activate=$("$(dirname "$0")/esp-env")
 [ -n "$activate" ] || { echo "ESP-IDF activation script not found" >&2; exit 1; }
 [ -f sdkconfig ] || [ -f CMakeLists.txt ] || { echo "run from an ESP-IDF project directory" >&2; exit 1; }
 
