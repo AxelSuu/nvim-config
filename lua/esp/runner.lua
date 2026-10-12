@@ -182,7 +182,13 @@ function M.with_log(cmd, root, log)
   return {
     "bash",
     "-c",
-    'script -q -f -c "$1" >(' .. filter .. ")",
+    -- if Neovim dies without cleanup (terminal closed, crash) `script` would keep running and hold
+    -- the serial port: a watchdog kills it once Neovim's pid is gone
+    'nv=$PPID; (while kill -0 "$nv" 2>/dev/null && kill -0 $$ 2>/dev/null; do sleep 2; done; '
+      .. "kill -9 $$ 2>/dev/null) & "
+      .. 'exec script -q -f -c "$1" >('
+      .. filter
+      .. ")",
     "_",
     cmd,
     root .. "/build/" .. log,
@@ -295,6 +301,28 @@ function M.idf(args, on_exit)
         local st = map and vim.uv.fs_stat(map)
         if st and st.mtime.sec >= since then
           require("esp.size").after_build(root)
+        end
+      end
+      -- configured by another ESP-IDF version (or Python env): offer the fullclean idf.py asks for
+      for _, l in
+        ipairs(
+          vim.api.nvim_buf_is_valid(term.buf) and vim.api.nvim_buf_get_lines(term.buf, 0, -1, false)
+            or {}
+        )
+      do
+        if l:find("Run 'idf.py fullclean' to start again", 1, true) then
+          vim.ui.select({ "Yes", "No" }, {
+            prompt = "Project was configured with another ESP-IDF install. Fullclean and rerun "
+              .. args
+              .. "?",
+          }, function(choice)
+            if choice == "Yes" then
+              M.idf("fullclean", function()
+                M.idf(args, on_exit)
+              end)
+            end
+          end)
+          return
         end
       end
       if on_exit then
