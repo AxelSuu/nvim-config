@@ -29,22 +29,24 @@ return {
     },
   },
   {
-    "lukas-reineke/indent-blankline.nvim",
-    main = "ibl",
-    config = function()
-      require("ibl").setup()
-    end,
-  },
-  {
-    "akinsho/toggleterm.nvim",
-    version = "*",
-    config = function()
-      require("toggleterm").setup({
-        open_mapping = [[<C-\>]],
-        direction = "float",
-        float_opts = { border = "curved" },
-      })
-    end,
+    "folke/snacks.nvim",
+    lazy = false,
+    priority = 1000,
+    opts = {
+      bigfile = { enabled = true },
+      indent = { enabled = true },
+      terminal = { win = { position = "float", border = "rounded" } },
+    },
+    keys = {
+      {
+        "<C-\\>",
+        function()
+          Snacks.terminal.toggle()
+        end,
+        mode = { "n", "t" },
+        desc = "Toggle terminal",
+      },
+    },
   },
   {
     "folke/trouble.nvim",
