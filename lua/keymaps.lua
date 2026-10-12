@@ -24,6 +24,9 @@ map("n", "<leader>d", vim.diagnostic.open_float)
 map("n", "<leader>xx", "<cmd>Trouble diagnostics toggle<CR>")
 map("n", "<leader>xd", "<cmd>Trouble diagnostics toggle filter.buf=0<CR>")
 
+-- Undo tree (built in)
+map("n", "<leader>u", "<cmd>Undotree<CR>")
+
 -- Quick save / quit
 map("n", "<leader>w", "<cmd>w<CR>")
 map("n", "<leader>q", "<cmd>q<CR>")
