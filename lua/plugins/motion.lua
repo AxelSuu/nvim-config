@@ -54,11 +54,11 @@ return {
       mc.setup()
       local set = vim.keymap.set
 
-      -- Helix C / Alt-C: add cursor on the line below/above
-      set({ "n", "x" }, "<down>", function()
+      -- Helix C / Alt-C: add cursor on the line below/above (plain arrows stay normal movement)
+      set({ "n", "x" }, "<C-down>", function()
         mc.lineAddCursor(1)
       end, { desc = "Add cursor below" })
-      set({ "n", "x" }, "<up>", function()
+      set({ "n", "x" }, "<C-up>", function()
         mc.lineAddCursor(-1)
       end, { desc = "Add cursor above" })
       set({ "n", "x" }, "<leader><down>", function()
