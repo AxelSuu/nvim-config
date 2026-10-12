@@ -62,6 +62,88 @@ local function project_port(root)
   return port and vim.uv.fs_stat(port) and port or nil
 end
 
+-- Monitor: on a crash the monitor prints decoded frames ("--- 0x4000afce: app_main at /p/main.c:18").
+-- They go into the quickfix list as soon as they appear, while the monitor keeps running.
+local crash_markers =
+  { "Guru Meditation", "abort%(%) was called", "assert failed", "Stack smashing" }
+
+local function crash_frames(lines, start)
+  local frames, entry = {}, nil
+  local function flush()
+    local addr, func, file, lnum = (entry or ""):match("^%-%-%- (0x%x+): (.-) at (%S+):(%d+)")
+    if addr and vim.uv.fs_stat(file) then
+      frames[#frames + 1] = { filename = file, lnum = tonumber(lnum), text = func .. "  " .. addr }
+    end
+    entry = nil
+  end
+  for i = start, #lines do
+    local l = lines[i]
+    if l:match("^%-%-%- 0x") then
+      flush()
+      entry = l
+    elseif entry and not entry:match(":%d+%s*$") then
+      entry = entry .. vim.trim(l) -- terminal wrapped a long line
+    else
+      flush()
+    end
+  end
+  flush()
+  return frames
+end
+
+local function watch_crashes(buf)
+  local pending, notified = false, nil
+  vim.api.nvim_buf_attach(buf, false, {
+    on_lines = function()
+      if pending then
+        return
+      end
+      pending = true
+      vim.defer_fn(function()
+        pending = false
+        if not vim.api.nvim_buf_is_valid(buf) then
+          return
+        end
+        local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+        local start
+        for i = #lines, 1, -1 do
+          for _, marker in ipairs(crash_markers) do
+            if lines[i]:find(marker) then
+              start = i
+            end
+          end
+          if start then
+            break
+          end
+        end
+        local frames = start and crash_frames(lines, start) or {}
+        if #frames == 0 then
+          return
+        end
+        vim.fn.setqflist(
+          {},
+          " ",
+          { title = "ESP crash: " .. vim.trim(lines[start]), items = frames }
+        )
+        -- a crash loop repeats the same crash after every reboot; say it once
+        local key = frames[1].filename .. ":" .. frames[1].lnum
+        if key ~= notified then
+          notified = key
+          local f = frames[1]
+          vim.notify(
+            ("ESP crashed in %s (%s:%d): ]q / [q through the backtrace, Space xq to list"):format(
+              f.text:match("^%S+"),
+              vim.fs.basename(f.filename),
+              f.lnum
+            ),
+            vim.log.levels.ERROR
+          )
+        end
+      end, 700)
+    end,
+  })
+end
+
 local function idf(args, on_exit)
   local script = activate_script()
   if not script then
@@ -81,6 +163,9 @@ local function idf(args, on_exit)
     auto_close = false,
     win = { position = "bottom", height = 0.35 },
   })
+  if args:find("monitor") then
+    watch_crashes(term.buf)
+  end
   vim.api.nvim_create_autocmd("TermClose", {
     buffer = term.buf,
     once = true,
