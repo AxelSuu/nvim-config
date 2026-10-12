@@ -3,6 +3,32 @@ local util = require("esp.util")
 local board = require("esp.board")
 local M = {}
 
+-- Build errors and crash frames are also diagnostics: inline in the code, and visible to
+-- Claude Code through claudecode.nvim's getDiagnostics
+local ns_build = vim.api.nvim_create_namespace("esp-idf.build")
+local ns_crash = vim.api.nvim_create_namespace("esp-idf.crash")
+
+local function publish(ns, items)
+  vim.diagnostic.reset(ns)
+  local by_buf = {}
+  for _, it in ipairs(items) do
+    local bufnr = (it.bufnr and it.bufnr > 0) and it.bufnr or vim.fn.bufadd(it.filename)
+    by_buf[bufnr] = by_buf[bufnr] or {}
+    table.insert(by_buf[bufnr], {
+      lnum = it.lnum - 1,
+      col = math.max((it.col or 1) - 1, 0),
+      message = it.message or it.text,
+      severity = it.severity
+        or (it.type == "w" and vim.diagnostic.severity.WARN)
+        or vim.diagnostic.severity.ERROR,
+      source = "esp-idf",
+    })
+  end
+  for bufnr, diags in pairs(by_buf) do
+    vim.diagnostic.set(ns, bufnr, diags)
+  end
+end
+
 -- Compiler and linker messages from the build/log files idf.py writes on every run
 local efm = table.concat({
   "%f:%l:%c: %trror: %m",
@@ -33,6 +59,7 @@ local function load_build_errors(root, args, since)
     end
   end
   vim.fn.setqflist({}, " ", { title = "idf.py " .. args, items = items })
+  publish(ns_build, items)
   if #items > 0 then
     local msg = ("%d errors, %d warnings: ]q / [q to jump, Space xq to list"):format(
       errors,
@@ -72,6 +99,7 @@ local function crash_frames(lines, start)
 end
 
 local function watch_crashes(buf)
+  publish(ns_crash, {}) -- new monitor session, forget the previous crash
   local pending, notified = false, nil
   vim.api.nvim_buf_attach(buf, false, {
     on_lines = function()
@@ -105,6 +133,14 @@ local function watch_crashes(buf)
           " ",
           { title = "ESP crash: " .. vim.trim(lines[start]), items = frames }
         )
+        local reason = lines[start]:match("%((.-)%)") or vim.trim(lines[start])
+        for i, f in ipairs(frames) do
+          local func = f.text:match("^%S+")
+          f.message = i == 1 and ("Crash (%s) in %s"):format(reason, func)
+            or ("Crash backtrace frame %d: %s"):format(i, func)
+          f.severity = i == 1 and vim.diagnostic.severity.ERROR or vim.diagnostic.severity.WARN
+        end
+        publish(ns_crash, frames)
         -- a crash loop repeats the same crash after every reboot; say it once
         local key = frames[1].filename .. ":" .. frames[1].lnum
         if key ~= notified then
@@ -185,9 +221,12 @@ function M.idf(args, on_exit)
     buffer = term.buf,
     once = true,
     callback = vim.schedule_wrap(function()
-      local ok, err = pcall(load_build_errors, root, args, since)
-      if not ok then
-        vim.notify("ESP-IDF: could not read build log: " .. err, vim.log.levels.WARN)
+      -- only commands that build replace the quickfix list (a monitor keeps its crash backtrace)
+      if args:find("build") or args:find("flash") or args:find("^app") or args:find("all") then
+        local ok, err = pcall(load_build_errors, root, args, since)
+        if not ok then
+          vim.notify("ESP-IDF: could not read build log: " .. err, vim.log.levels.WARN)
+        end
       end
       if on_exit then
         on_exit()
