@@ -1,0 +1,31 @@
+return {
+  {
+    "coder/claudecode.nvim",
+    dependencies = { "folke/snacks.nvim" },
+    cmd = {
+      "ClaudeCode",
+      "ClaudeCodeFocus",
+      "ClaudeCodeSelectModel",
+      "ClaudeCodeAdd",
+      "ClaudeCodeSend",
+      "ClaudeCodeTreeAdd",
+      "ClaudeCodeStatus",
+      "ClaudeCodeStart",
+      "ClaudeCodeDiffAccept",
+      "ClaudeCodeDiffDeny",
+    },
+    keys = {
+      { "<leader>ac", "<cmd>ClaudeCode<CR>", desc = "Toggle Claude" },
+      { "<leader>af", "<cmd>ClaudeCodeFocus<CR>", desc = "Focus Claude" },
+      { "<leader>ar", "<cmd>ClaudeCode --resume<CR>", desc = "Resume Claude" },
+      { "<leader>aC", "<cmd>ClaudeCode --continue<CR>", desc = "Continue Claude" },
+      { "<leader>am", "<cmd>ClaudeCodeSelectModel<CR>", desc = "Select model" },
+      { "<leader>ab", "<cmd>ClaudeCodeAdd %<CR>", desc = "Add buffer" },
+      { "<leader>as", "<cmd>ClaudeCodeSend<CR>", mode = "v", desc = "Send selection" },
+      { "<leader>as", "<cmd>ClaudeCodeTreeAdd<CR>", ft = "NvimTree", desc = "Add file" },
+      { "<leader>aa", "<cmd>ClaudeCodeDiffAccept<CR>", desc = "Accept diff" },
+      { "<leader>ad", "<cmd>ClaudeCodeDiffDeny<CR>", desc = "Deny diff" },
+    },
+    opts = {},
+  },
+}

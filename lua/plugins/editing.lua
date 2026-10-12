@@ -18,6 +18,7 @@ return {
     opts = {
       preset = "helix",
       spec = {
+        { "<leader>a", group = "ai" },
         { "<leader>c", group = "code" },
         { "<leader>D", group = "debug" },
         { "<leader>f", group = "find" },
