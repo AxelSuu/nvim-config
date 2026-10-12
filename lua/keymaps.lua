@@ -14,12 +14,6 @@ map("v", ">", ">gv")
 map("v", "J", ":m '>+1<CR>gv=gv")
 map("v", "K", ":m '<-2<CR>gv=gv")
 
--- Telescope
-map("n", "<leader>ff", "<cmd>Telescope find_files<CR>")
-map("n", "<leader>fg", "<cmd>Telescope live_grep<CR>")
-map("n", "<leader>fb", "<cmd>Telescope buffers<CR>")
-map("n", "<leader>fh", "<cmd>Telescope help_tags<CR>")
-
 -- File tree
 map("n", "<leader>e", "<cmd>NvimTreeToggle<CR>")
 
