@@ -280,6 +280,62 @@ local function docs()
   vim.ui.open(url)
 end
 
+-- New project from one of the ESP-IDF examples, copied into ~/esp32/<name>
+local projects_dir = vim.fn.expand("~/esp32")
+
+local function new_from_example()
+  local idf_path = vim.fn.glob(vim.fn.expand("~/.espressif/v*/esp-idf"), false, true)
+  local examples = idf_path[#idf_path] and (idf_path[#idf_path] .. "/examples")
+  if not examples or not vim.uv.fs_stat(examples) then
+    return vim.notify("ESP-IDF examples not found", vim.log.levels.ERROR)
+  end
+  local list = {}
+  for _, f in ipairs(vim.fn.globpath(examples, "**/main/CMakeLists.txt", false, true)) do
+    local dir = f:sub(#examples + 2, -#"/main/CMakeLists.txt" - 1)
+    if not dir:find("/components/") then
+      list[#list + 1] = dir
+    end
+  end
+  table.sort(list)
+  require("fzf-lua").fzf_exec(list, {
+    prompt = "ESP-IDF example> ",
+    cwd = examples,
+    preview = "batcat --style=plain --color=always {}/README.md 2>/dev/null || ls {}",
+    actions = {
+      default = function(selected)
+        local example = selected and selected[1]
+        if not example then
+          return
+        end
+        vim.ui.input(
+          { prompt = "Project name: ", default = vim.fs.basename(example) },
+          function(name)
+            if not name or name == "" then
+              return
+            end
+            local dest = projects_dir .. "/" .. name
+            if vim.uv.fs_stat(dest) then
+              return vim.notify(dest .. " already exists", vim.log.levels.ERROR)
+            end
+            vim.fn.mkdir(projects_dir, "p")
+            local res = vim.system({ "cp", "-r", examples .. "/" .. example, dest }):wait()
+            if res.code ~= 0 then
+              return vim.notify("Copy failed: " .. (res.stderr or ""), vim.log.levels.ERROR)
+            end
+            vim.cmd.cd(dest)
+            local main = vim.fn.glob(dest .. "/main/*.c", false, true)[1]
+              or vim.fn.glob(dest .. "/main/*.cpp", false, true)[1]
+            if main then
+              vim.cmd.edit(main)
+            end
+            vim.notify("Created " .. dest .. ", next: Space Et to pick the chip, then Space Eb")
+          end
+        )
+      end,
+    },
+  })
+end
+
 vim.api.nvim_create_user_command("Idf", function(o)
   idf(o.args)
 end, {
@@ -313,3 +369,4 @@ vim.keymap.set("n", "<leader>Eu", attach_usb, { desc = "Attach USB device to WSL
 vim.keymap.set("n", "<leader>Et", pick_target, { desc = "Set target chip" })
 vim.keymap.set("n", "<leader>Ea", pick_action, { desc = "More idf.py actions" })
 vim.keymap.set("n", "<leader>Ed", docs, { desc = "ESP-IDF docs for word under cursor" })
+vim.keymap.set("n", "<leader>En", new_from_example, { desc = "New project from example" })
