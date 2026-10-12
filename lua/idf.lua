@@ -144,6 +144,25 @@ local function watch_crashes(buf)
   })
 end
 
+-- Only one process can hold the serial port: a new flash/monitor stops the previous one
+local serial_terms = {}
+
+local function uses_port(args)
+  return args:find("flash") or args:find("monitor") or args:find("erase")
+end
+
+local function release_port()
+  for _, term in ipairs(serial_terms) do
+    local job = vim.api.nvim_buf_is_valid(term.buf) and vim.b[term.buf].terminal_job_id
+    if job and vim.fn.jobwait({ job }, 0)[1] == -1 then
+      vim.fn.jobstop(job)
+      vim.fn.jobwait({ job }, 3000)
+    end
+    term:close()
+  end
+  serial_terms = {}
+end
+
 local function idf(args, on_exit)
   local script = activate_script()
   if not script then
@@ -158,11 +177,17 @@ local function idf(args, on_exit)
     args
   )
   local since = os.time()
+  if uses_port(args) then
+    release_port()
+  end
   local term = Snacks.terminal.open({ "sh", "-c", cmd }, {
     cwd = root,
     auto_close = false,
     win = { position = "bottom", height = 0.35 },
   })
+  if uses_port(args) then
+    table.insert(serial_terms, term)
+  end
   if args:find("monitor") then
     watch_crashes(term.buf)
   end
