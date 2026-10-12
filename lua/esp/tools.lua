@@ -262,4 +262,50 @@ function M.add_component()
   end)
 end
 
+-- Project-wide clang-tidy (idf.py clang-check writes warnings.txt): quickfix and diagnostics,
+-- only for files in the project (ESP-IDF's own sources are skipped)
+local ns_tidy = vim.api.nvim_create_namespace("esp-idf.tidy")
+
+function M.clang_check()
+  local root = util.project_root()
+  runner.idf("clang-check", function()
+    local ok, lines = pcall(vim.fn.readfile, root .. "/warnings.txt")
+    if not ok then
+      return vim.notify("clang-check wrote no warnings.txt, see the panel", vim.log.levels.WARN)
+    end
+    local items, seen = {}, {}
+    local efm = "%f:%l:%c: %trror: %m,%f:%l:%c: %tarning: %m"
+    for _, it in ipairs(vim.fn.getqflist({ lines = lines, efm = efm }).items) do
+      local file = it.bufnr > 0 and vim.api.nvim_buf_get_name(it.bufnr) or ""
+      local key = file .. ":" .. it.lnum .. ":" .. it.text
+      if
+        it.valid == 1
+        and vim.startswith(file, root .. "/")
+        and not file:find("/managed_components/")
+        and not seen[key]
+      then
+        seen[key] = true
+        items[#items + 1] = it
+      end
+    end
+    vim.fn.setqflist({}, " ", { title = "clang-tidy", items = items })
+    vim.diagnostic.reset(ns_tidy)
+    local by_buf = {}
+    for _, it in ipairs(items) do
+      by_buf[it.bufnr] = by_buf[it.bufnr] or {}
+      table.insert(by_buf[it.bufnr], {
+        lnum = it.lnum - 1,
+        col = math.max(it.col - 1, 0),
+        message = it.text,
+        severity = it.type == "e" and vim.diagnostic.severity.ERROR or vim.diagnostic.severity.WARN,
+        source = "clang-tidy",
+      })
+    end
+    for bufnr, diags in pairs(by_buf) do
+      vim.diagnostic.set(ns_tidy, bufnr, diags)
+    end
+    vim.notify(("clang-tidy: %d findings in the project (]q / Space xq)"):format(#items))
+  end)
+end
+
 return M
