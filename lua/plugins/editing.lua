@@ -40,9 +40,17 @@ return {
       indent = { enabled = true },
       terminal = { win = { position = "float", border = "rounded" } },
     },
+    -- Ctrl-\ needs AltGr on a Swedish keyboard; Alt-t also works from inside the terminal
     keys = {
       {
-        "<C-\\>",
+        "<leader>t",
+        function()
+          Snacks.terminal.toggle()
+        end,
+        desc = "Toggle terminal",
+      },
+      {
+        "<M-t>",
         function()
           Snacks.terminal.toggle()
         end,
@@ -57,7 +65,11 @@ return {
     cmd = "Trouble",
     keys = {
       { "<leader>xx", "<cmd>Trouble diagnostics toggle<CR>", desc = "Diagnostics" },
-      { "<leader>xd", "<cmd>Trouble diagnostics toggle filter.buf=0<CR>", desc = "Buffer diagnostics" },
+      {
+        "<leader>xd",
+        "<cmd>Trouble diagnostics toggle filter.buf=0<CR>",
+        desc = "Buffer diagnostics",
+      },
     },
     config = function()
       require("trouble").setup()

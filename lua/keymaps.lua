@@ -32,3 +32,29 @@ map("n", "<leader>q", "<cmd>q<CR>")
 
 -- Clear search highlight
 map("n", "<Esc>", "<cmd>nohlsearch<CR>")
+
+-- Terminals: start in typing mode, Esc Esc back to normal mode (Ctrl-\ Ctrl-n needs AltGr here)
+vim.api.nvim_create_autocmd("TermOpen", {
+  callback = function(ev)
+    vim.wo.number = false
+    vim.wo.relativenumber = false
+    vim.cmd.startinsert()
+    -- Claude Code uses Esc Esc itself (rewind)
+    if vim.api.nvim_buf_get_name(ev.buf):match("//%d+:[^/]*claude") then
+      return
+    end
+    local timer = vim.uv.new_timer()
+    map("t", "<Esc>", function()
+      if timer:is_active() then
+        timer:stop()
+        return "<C-\\><C-n>"
+      end
+      timer:start(200, 0, function() end)
+      return "<Esc>"
+    end, { buffer = ev.buf, expr = true, desc = "Esc Esc: normal mode" })
+  end,
+})
+vim.api.nvim_create_autocmd("BufEnter", {
+  pattern = "term://*",
+  command = "startinsert",
+})
