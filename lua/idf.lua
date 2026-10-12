@@ -205,6 +205,81 @@ local function attach_usb()
   end)
 end
 
+local function sdkconfig_target(root)
+  local ok, lines = pcall(vim.fn.readfile, root .. "/sdkconfig")
+  for _, line in ipairs(ok and lines or {}) do
+    local t = line:match('^CONFIG_IDF_TARGET="(.-)"')
+    if t then
+      return t
+    end
+  end
+  return "esp32"
+end
+
+-- set-target regenerates build/ and compile_commands.json, so clangd restarts afterwards
+local function pick_target()
+  local script = activate_script()
+  if not script then
+    return
+  end
+  vim.notify("Loading ESP-IDF targets...")
+  local cmd = ('. %s >/dev/null && python "$IDF_PATH/tools/idf.py" --list-targets'):format(
+    vim.fn.shellescape(script)
+  )
+  vim.system(
+    { "sh", "-c", cmd },
+    { text = true },
+    vim.schedule_wrap(function(res)
+      local targets = vim.split(vim.trim(res.stdout or ""), "\n", { trimempty = true })
+      local current = sdkconfig_target(project_root())
+      vim.ui.select(targets, {
+        prompt = "Set target (current: " .. current .. ", this wipes build/)",
+      }, function(target)
+        if target then
+          idf("set-target " .. target, function()
+            vim.cmd("lsp restart clangd")
+          end)
+        end
+      end)
+    end)
+  )
+end
+
+local actions = {
+  { "app-flash", "Flash the app only (skips bootloader and partitions, faster)" },
+  { "size", "Firmware size summary" },
+  { "size-components", "Size per component" },
+  { "size-files", "Size per source file" },
+  { "erase-flash", "Erase the entire flash" },
+  { "reconfigure", "Re-run CMake (refreshes compile_commands.json)" },
+  { "save-defconfig", "Save current config as sdkconfig.defaults" },
+  { "fullclean", "Delete the build directory" },
+}
+
+local function pick_action()
+  vim.ui.select(actions, {
+    prompt = "idf.py",
+    format_item = function(a)
+      return ("%-16s %s"):format(a[1], a[2])
+    end,
+  }, function(a)
+    if a then
+      idf(a[1])
+    end
+  end)
+end
+
+-- ESP-IDF docs search for the word under the cursor, matching IDF version and chip
+local function docs()
+  local version = (activate_script() or ""):match("activate_idf_(v[%d.]+)%.sh") or "stable"
+  local url = ("https://docs.espressif.com/projects/esp-idf/en/%s/%s/search.html?q=%s"):format(
+    version,
+    sdkconfig_target(project_root()),
+    vim.uri_encode(vim.fn.expand("<cword>"))
+  )
+  vim.ui.open(url)
+end
+
 vim.api.nvim_create_user_command("Idf", function(o)
   idf(o.args)
 end, {
@@ -235,3 +310,6 @@ map("<leader>Eo", "openocd", "OpenOCD (for debugging)")
 map("<leader>Ec", "menuconfig", "Menuconfig")
 vim.keymap.set("n", "<leader>Ep", pick_port, { desc = "Pick serial port" })
 vim.keymap.set("n", "<leader>Eu", attach_usb, { desc = "Attach USB device to WSL (usbipd)" })
+vim.keymap.set("n", "<leader>Et", pick_target, { desc = "Set target chip" })
+vim.keymap.set("n", "<leader>Ea", pick_action, { desc = "More idf.py actions" })
+vim.keymap.set("n", "<leader>Ed", docs, { desc = "ESP-IDF docs for word under cursor" })
