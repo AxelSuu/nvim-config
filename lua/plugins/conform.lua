@@ -1,4 +1,5 @@
-local mason_tools = { "clang-format", "stylua", "prettierd" }
+-- Formatters, plus shellcheck which bashls uses for linting when it is on PATH
+local mason_tools = { "clang-format", "stylua", "prettierd", "shellcheck" }
 
 local autoformat = require("autoformat")
 

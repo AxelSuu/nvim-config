@@ -19,7 +19,17 @@ return {
     dependencies = { "mason-org/mason.nvim", "mason-org/mason-lspconfig.nvim" },
     config = function()
       require("mason-lspconfig").setup({
-        ensure_installed = { "lua_ls", "pyright", "clangd", "bashls", "vtsls", "rust_analyzer", "eslint" },
+        ensure_installed = {
+          "lua_ls",
+          "pyright",
+          "clangd",
+          "bashls",
+          "vtsls",
+          "rust_analyzer",
+          "eslint",
+          "neocmake",
+          "taplo",
+        },
         automatic_enable = false,
       })
 
@@ -63,12 +73,37 @@ return {
           })
         end,
       })
+      -- bashls scans every PATH dir at startup; the Windows dirs WSL adds (/mnt/c/...) make it hang
+      local linux_path = vim.tbl_filter(function(dir)
+        return not vim.startswith(dir, "/mnt/")
+      end, vim.split(vim.env.PATH, ":"))
+      vim.lsp.config("bashls", { cmd_env = { PATH = table.concat(linux_path, ":") } })
+
+      -- Diagnostics and completion only: saving should not reformat CMakeLists.txt or Cargo.toml
+      for _, name in ipairs({ "neocmake", "taplo" }) do
+        vim.lsp.config(name, {
+          on_init = function(client)
+            client.server_capabilities.documentFormattingProvider = false
+          end,
+        })
+      end
       vim.lsp.config("rust_analyzer", {
         settings = { ["rust-analyzer"] = { check = { command = "clippy" } } },
       })
 
       -- ruff comes from uv; rust-analyzer from mason so it works whatever toolchain a project pins
-      vim.lsp.enable({ "lua_ls", "clangd", "pyright", "ruff", "rust_analyzer", "vtsls", "eslint", "bashls" })
+      vim.lsp.enable({
+        "lua_ls",
+        "clangd",
+        "pyright",
+        "ruff",
+        "rust_analyzer",
+        "vtsls",
+        "eslint",
+        "bashls",
+        "neocmake",
+        "taplo",
+      })
 
       vim.api.nvim_create_autocmd("LspAttach", {
         callback = function(ev)
