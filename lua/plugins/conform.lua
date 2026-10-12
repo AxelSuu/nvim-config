@@ -1,13 +1,23 @@
 local mason_tools = { "clang-format", "stylua", "prettierd" }
 
+local autoformat = require("autoformat")
+
 return {
   {
     "stevearc/conform.nvim",
     event = "BufWritePre",
     cmd = "ConformInfo",
+    keys = {
+      { "<leader>cf", autoformat.toggle("global"), desc = "Toggle format on save" },
+      { "<leader>cF", autoformat.toggle("buffer"), desc = "Toggle format on save (buffer)" },
+    },
     config = function()
       require("conform").setup({
-        format_on_save = { timeout_ms = 500, lsp_format = "fallback" },
+        format_on_save = function(bufnr)
+          if autoformat.enabled(bufnr) then
+            return { timeout_ms = 500, lsp_format = "fallback" }
+          end
+        end,
         formatters_by_ft = {
           python = { "ruff_organize_imports", "ruff_format" },
           c = { "clang_format" },
