@@ -23,4 +23,21 @@ return {
     end,
     opts = {},
   },
+  {
+    -- Project-wide search and replace with ripgrep
+    "MagicDuck/grug-far.nvim",
+    cmd = "GrugFar",
+    keys = {
+      { "<leader>fR", "<cmd>GrugFar<CR>", desc = "Search and replace" },
+      {
+        "<leader>fR",
+        function()
+          require("grug-far").with_visual_selection()
+        end,
+        mode = "x",
+        desc = "Search and replace selection",
+      },
+    },
+    opts = {},
+  },
 }
