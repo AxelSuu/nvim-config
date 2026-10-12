@@ -1,0 +1,11 @@
+menu "Neovim task stats"
+
+    config NVIM_TASK_STATS
+        bool "Collect FreeRTOS run time stats for Neovim (Space ET)"
+        default y
+        select FREERTOS_GENERATE_RUN_TIME_STATS
+        help
+            Enables FreeRTOS run time statistics so nvim_task_stats_start() can print per task CPU
+            usage, state, priority and free stack. Neovim shows them live with Space ET.
+
+endmenu
