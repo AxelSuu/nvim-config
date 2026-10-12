@@ -91,6 +91,8 @@ local function claude_block(root)
     ),
     "  If the port is busy, the user's monitor is open: read build/monitor.log instead.",
     "- Build errors and crash backtraces are diagnostics with source `esp-idf` (getDiagnostics).",
+    "- After a crash with core dumps enabled: `idf.py coredump-info` (Neovim Space Ek saves it to",
+    "  build/coredump.txt): crashed task, its stack, and all FreeRTOS tasks with stack usage.",
     ("- Hardware tests: `%s%s` builds, flashes and runs pytest_*.py (pytest-embedded) on the board."):format(
       vim.fn.stdpath("config") .. "/bin/esp-test",
       port and (" " .. port) or ""

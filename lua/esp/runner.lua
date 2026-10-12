@@ -7,8 +7,9 @@ local M = {}
 -- Claude Code through claudecode.nvim's getDiagnostics
 local ns_build = vim.api.nvim_create_namespace("esp-idf.build")
 local ns_crash = vim.api.nvim_create_namespace("esp-idf.crash")
+M.ns_crash = ns_crash
 
-local function publish(ns, items)
+function M.publish(ns, items)
   vim.diagnostic.reset(ns)
   local by_buf = {}
   for _, it in ipairs(items) do
@@ -59,7 +60,7 @@ local function load_build_errors(root, args, since)
     end
   end
   vim.fn.setqflist({}, " ", { title = "idf.py " .. args, items = items })
-  publish(ns_build, items)
+  M.publish(ns_build, items)
   if #items > 0 then
     local msg = ("%d errors, %d warnings: ]q / [q to jump, Space xq to list"):format(
       errors,
@@ -99,7 +100,7 @@ local function crash_frames(lines, start)
 end
 
 local function watch_crashes(buf)
-  publish(ns_crash, {}) -- new monitor session, forget the previous crash
+  M.publish(ns_crash, {}) -- new monitor session, forget the previous crash
   local pending, notified = false, nil
   vim.api.nvim_buf_attach(buf, false, {
     on_lines = function()
@@ -140,7 +141,7 @@ local function watch_crashes(buf)
             or ("Crash backtrace frame %d: %s"):format(i, func)
           f.severity = i == 1 and vim.diagnostic.severity.ERROR or vim.diagnostic.severity.WARN
         end
-        publish(ns_crash, frames)
+        M.publish(ns_crash, frames)
         -- a crash loop repeats the same crash after every reboot; say it once
         local key = frames[1].filename .. ":" .. frames[1].lnum
         if key ~= notified then
@@ -160,9 +161,22 @@ local function watch_crashes(buf)
   })
 end
 
--- The monitor also writes a clean copy of the device output to build/monitor.log (overwritten per
--- session), so Claude Code can read what the board printed. `script` keeps the monitor interactive.
-local function with_monitor_log(cmd, root)
+-- Also write a clean copy (no colors) of the output to build/<log>, overwritten per run, so
+-- Claude Code can read it: monitor.log, coredump.txt. `script` keeps the command interactive.
+-- Same for non-interactive commands: a pipe instead of a terminal (gdb would stop at pager prompts)
+function M.with_tee(cmd, root, log)
+  vim.fn.mkdir(root .. "/build", "p")
+  return {
+    "sh",
+    "-c",
+    [[(eval "$1") 2>&1 | sed -u -e 's/\x1b\[[0-9;?]*[a-zA-Z]//g' -e 's/\r//g' | tee "$2"]],
+    "sh", -- $0: the ESP-IDF activation script only accepts being sourced from sh/bash
+    cmd,
+    root .. "/build/" .. log,
+  }
+end
+
+function M.with_log(cmd, root, log)
   vim.fn.mkdir(root .. "/build", "p")
   local filter = [[sed -u -e 's/\x1b\[[0-9;?]*[a-zA-Z]//g' -e 's/\r//g' > "$2"]]
   return {
@@ -171,7 +185,7 @@ local function with_monitor_log(cmd, root)
     'script -q -f -c "$1" >(' .. filter .. ")",
     "_",
     cmd,
-    root .. "/build/monitor.log",
+    root .. "/build/" .. log,
   }
 end
 
@@ -231,7 +245,7 @@ function M.idf(args, on_exit)
   if uses_port(args) then
     release_port()
   end
-  local argv = args:find("monitor") and with_monitor_log(cmd, root) or { "sh", "-c", cmd }
+  local argv = args:find("monitor") and M.with_log(cmd, root, "monitor.log") or { "sh", "-c", cmd }
   local term = Snacks.terminal.open(argv, {
     cwd = root,
     auto_close = false,

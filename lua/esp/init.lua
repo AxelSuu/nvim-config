@@ -53,3 +53,4 @@ vim.api.nvim_create_autocmd("BufWritePost", {
     require("esp.partitions").validate(ev.buf)
   end,
 })
+map("<leader>Ek", require("esp.coredump").read, "Read core dump from flash")
