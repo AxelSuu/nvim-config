@@ -22,7 +22,7 @@ return {
       { "<leader>am", "<cmd>ClaudeCodeSelectModel<CR>", desc = "Select model" },
       { "<leader>ab", "<cmd>ClaudeCodeAdd %<CR>", desc = "Add buffer" },
       { "<leader>as", "<cmd>ClaudeCodeSend<CR>", mode = "v", desc = "Send selection" },
-      { "<leader>as", "<cmd>ClaudeCodeTreeAdd<CR>", ft = "NvimTree", desc = "Add file" },
+      { "<leader>as", "<cmd>ClaudeCodeTreeAdd<CR>", ft = { "NvimTree", "oil" }, desc = "Add file" },
       { "<leader>aa", "<cmd>ClaudeCodeDiffAccept<CR>", desc = "Accept diff" },
       { "<leader>ad", "<cmd>ClaudeCodeDiffDeny<CR>", desc = "Deny diff" },
     },
