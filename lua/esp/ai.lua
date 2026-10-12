@@ -99,6 +99,12 @@ local function claude_block(root)
     ),
     "  If the port is busy, the user's monitor is open: read build/monitor.log instead.",
     "- Build errors and crash backtraces are diagnostics with source `esp-idf` (getDiagnostics).",
+    ("- No board needed (ESP32, C3, S3 only): `%s --qemu 15` runs the build in QEMU."):format(
+      capture
+    ),
+    "- FreeRTOS tasks: with the nvim_task_stats component, `TS|` lines in the monitor log list each",
+    "  task's state, priority, free stack (bytes) and CPU % (Neovim Space ET shows them live).",
+    "- Static analysis: `idf.py clang-check` writes warnings.txt (Neovim Space EL loads it).",
     "- After a crash with core dumps enabled: `idf.py coredump-info` (Neovim Space Ek saves it to",
     "  build/coredump.txt): crashed task, its stack, and all FreeRTOS tasks with stack usage.",
     ("- Hardware tests: `%s%s` builds, flashes and runs pytest_*.py (pytest-embedded) on the board."):format(
