@@ -13,6 +13,10 @@ activate=$("$(dirname "$0")/esp-env")
 [ -n "$activate" ] || { echo "ESP-IDF activation script not found" >&2; exit 1; }
 [ -f sdkconfig ] || [ -f CMakeLists.txt ] || { echo "run from an ESP-IDF project directory" >&2; exit 1; }
 
+# default to the board profile written by Neovim (Space Ep)
+if [ -z "$port" ] && [ -f .esp-board.json ]; then
+  port=$(python3 -I -c 'import json; print(json.load(open(".esp-board.json")).get("port") or "")' 2>/dev/null || true)
+fi
 port_arg=${port:+-p $port}
 action="$port_arg monitor"
 env=

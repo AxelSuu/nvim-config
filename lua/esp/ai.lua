@@ -61,7 +61,12 @@ end
 local function claude_block(root)
   local target = util.sdkconfig_target(root)
   local port = board.port(root)
-  local rev = silicon_revision(root)
+  local profile = board.profile(root)
+  local rev = silicon_revision(root) or (profile.revision ~= vim.NIL and profile.revision or nil)
+  if rev then
+    profile = board.update_profile(root, { revision = rev, chip = target })
+  end
+  local usb = profile.usb ~= vim.NIL and profile.usb or nil
   local activate = util.activate_script() or "~/.espressif/tools/activate_idf_v*.sh"
   local version = activate:match("activate_idf_(v[%d.]+)%.sh") or "?"
   local p = port and (" -p " .. port) or ""
@@ -75,7 +80,10 @@ local function claude_block(root)
       version,
       util.idf_path() or "?"
     ),
-    "- Serial port: " .. (port or "auto-detect (none chosen in Neovim yet)"),
+    "- Serial port: "
+      .. (port or "auto-detect (none chosen in Neovim yet)")
+      .. (usb and (", USB id " .. usb) or ""),
+    "- Board profile: `.esp-board.json` (port, USB id, chip, revision; set with Neovim Space Ep).",
     "- The user works in Neovim with this project; Claude Code runs in a split next to it.",
     "",
     "## Build, flash, read the board",

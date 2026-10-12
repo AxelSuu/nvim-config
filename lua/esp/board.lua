@@ -2,19 +2,52 @@
 local util = require("esp.util")
 local M = {}
 
--- Remembered across sessions; idf.py autodetects when none is set
-local ports_file = vim.fn.stdpath("data") .. "/idf-ports.json"
+-- Board profile per project in .esp-board.json: port, USB id (VID:PID), chip, revision.
+-- Read by Neovim, bin/esp-capture, bin/esp-test and the CLAUDE.md block (Space EI).
+-- Older per-user port choices (stdpath data) are still honoured.
+local legacy_ports = vim.fn.stdpath("data") .. "/idf-ports.json"
 
-local function read_ports()
+local function read_json(path)
   local ok, data = pcall(function()
-    return vim.json.decode(table.concat(vim.fn.readfile(ports_file), "\n"))
+    return vim.json.decode(table.concat(vim.fn.readfile(path), "\n"))
   end)
   return ok and type(data) == "table" and data or {}
 end
 
+function M.profile(root)
+  return read_json(root .. "/.esp-board.json")
+end
+
+function M.update_profile(root, fields)
+  local profile = vim.tbl_extend("force", M.profile(root), fields)
+  local res = vim
+    .system({ "python3", "-I", "-m", "json.tool", "--indent", "2" }, {
+      stdin = vim.json.encode(profile),
+      text = true,
+    })
+    :wait()
+  vim.fn.writefile(
+    vim.split(res.stdout or vim.json.encode(profile), "\n", { trimempty = true }),
+    root .. "/.esp-board.json"
+  )
+  return profile
+end
+
 function M.port(root)
-  local port = read_ports()[root]
-  return port and vim.uv.fs_stat(port) and port or nil
+  local port = M.profile(root).port or read_json(legacy_ports)[root]
+  return port and port ~= vim.NIL and vim.uv.fs_stat(port) and port or nil
+end
+
+-- VID:PID of the USB device behind a tty, from sysfs
+local function usb_id(port)
+  local dev = port
+    and vim.uv.fs_realpath("/sys/class/tty/" .. vim.fs.basename(port) .. "/device/..")
+  local function read(name)
+    local ok, l = pcall(vim.fn.readfile, dev .. "/" .. name)
+    return ok and l[1] or nil
+  end
+  local vid, pid = dev and read("idVendor"), dev and read("idProduct")
+  return vid and pid and (vid .. ":" .. pid) or nil
 end
 
 -- /dev/serial/by-id names say which board is which
@@ -39,10 +72,12 @@ function M.pick_port()
     if not choice then
       return
     end
-    local ports = read_ports()
-    ports[root] = choice.port
-    vim.fn.writefile({ vim.json.encode(ports) }, ports_file)
-    vim.notify("ESP-IDF port: " .. (choice.port or "auto-detect"))
+    M.update_profile(root, {
+      port = choice.port or vim.NIL,
+      usb = usb_id(choice.port) or vim.NIL,
+      chip = util.sdkconfig_target(root),
+    })
+    vim.notify("ESP-IDF port: " .. (choice.port or "auto-detect") .. " (saved in .esp-board.json)")
   end)
 end
 
@@ -75,8 +110,15 @@ local function usb_devices()
       end
     end
   end
+  local mine = M.profile(util.project_root()).usb
+  local function rank(d)
+    return d.hwid == mine and 0 or d.vendor and 1 or 2
+  end
+  for _, d in ipairs(devices) do
+    d.mine = d.hwid == mine
+  end
   table.sort(devices, function(a, b)
-    return (a.vendor and 0 or 1) < (b.vendor and 0 or 1)
+    return rank(a) < rank(b)
   end)
   return devices
 end
@@ -88,11 +130,12 @@ function M.attach_usb()
   vim.ui.select(usb_devices(), {
     prompt = "Attach USB device to WSL",
     format_item = function(d)
-      return ("%s  %s  %s  [%s]"):format(
+      return ("%s  %s  %s  [%s]%s"):format(
         d.hwid,
         d.vendor and ("(" .. d.vendor .. ")") or "",
         d.desc,
-        d.state
+        d.state,
+        d.mine and "  <- this project's board" or ""
       )
     end,
   }, function(d)

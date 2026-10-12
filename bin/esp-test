@@ -11,6 +11,10 @@ activate=$("$(dirname "$0")/esp-env")
 [ -f sdkconfig ] || { echo "no sdkconfig: run from a configured ESP-IDF project (idf.py set-target)" >&2; exit 1; }
 compgen -G "pytest_*.py" >/dev/null || { echo "no pytest_*.py in this project" >&2; exit 1; }
 target=$(sed -n 's/^CONFIG_IDF_TARGET="\(.*\)"$/\1/p' sdkconfig)
+# default to the board profile written by Neovim (Space Ep)
+if [ -z "$port" ] && [ -f .esp-board.json ]; then
+  port=$(python3 -I -c 'import json; print(json.load(open(".esp-board.json")).get("port") or "")' 2>/dev/null || true)
+fi
 if [ -z "$port" ]; then
   for p in /dev/ttyACM* /dev/ttyUSB*; do [ -e "$p" ] && { port=$p; break; }; done
 fi
