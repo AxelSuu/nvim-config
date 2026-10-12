@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# Capture device output without a terminal (for Claude Code / scripts).
+# Usage: esp-capture [seconds=15] [port]   run from an ESP-IDF project directory.
+# Resets the chip (like idf.py monitor does), prints clean text, writes build/capture.log.
+set -euo pipefail
+
+secs=${1:-15}
+port=${2:-}
+activate=$(ls ~/.espressif/tools/activate_idf_v*.sh 2>/dev/null | tail -1)
+[ -n "$activate" ] || { echo "ESP-IDF activation script not found" >&2; exit 1; }
+[ -f sdkconfig ] || [ -f CMakeLists.txt ] || { echo "run from an ESP-IDF project directory" >&2; exit 1; }
+
+port_arg=${port:+-p $port}
+cmd=". $activate >/dev/null && timeout $secs python \"\$IDF_PATH/tools/idf.py\" $port_arg monitor"
+mkdir -p build
+# script gives idf.py monitor the terminal it needs; sed strips colors and carriage returns
+script -q -f -c "$cmd" /dev/null </dev/null \
+  | sed -u -e 's/\x1b\[[0-9;?]*[a-zA-Z]//g' -e 's/\r//g' \
+  | tee build/capture.log
