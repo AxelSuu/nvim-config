@@ -124,6 +124,21 @@ local function watch_crashes(buf)
   })
 end
 
+-- The monitor also writes a clean copy of the device output to build/monitor.log (overwritten per
+-- session), so Claude Code can read what the board printed. `script` keeps the monitor interactive.
+local function with_monitor_log(cmd, root)
+  vim.fn.mkdir(root .. "/build", "p")
+  local filter = [[sed -u -e 's/\x1b\[[0-9;?]*[a-zA-Z]//g' -e 's/\r//g' > "$2"]]
+  return {
+    "bash",
+    "-c",
+    'script -q -f -c "$1" >(' .. filter .. ")",
+    "_",
+    cmd,
+    root .. "/build/monitor.log",
+  }
+end
+
 -- Only one process can hold the serial port: a new flash/monitor stops the previous one
 local serial_terms = {}
 
@@ -154,7 +169,8 @@ function M.idf(args, on_exit)
   if uses_port(args) then
     release_port()
   end
-  local term = Snacks.terminal.open({ "sh", "-c", cmd }, {
+  local argv = args:find("monitor") and with_monitor_log(cmd, root) or { "sh", "-c", cmd }
+  local term = Snacks.terminal.open(argv, {
     cwd = root,
     auto_close = false,
     win = { position = "bottom", height = 0.35 },
