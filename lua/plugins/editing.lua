@@ -8,6 +8,7 @@ return {
   },
   {
     "kylechui/nvim-surround",
+    event = "VeryLazy",
     config = function()
       require("nvim-surround").setup()
     end,
@@ -53,6 +54,11 @@ return {
   {
     "folke/trouble.nvim",
     dependencies = { "nvim-tree/nvim-web-devicons" },
+    cmd = "Trouble",
+    keys = {
+      { "<leader>xx", "<cmd>Trouble diagnostics toggle<CR>", desc = "Diagnostics" },
+      { "<leader>xd", "<cmd>Trouble diagnostics toggle filter.buf=0<CR>", desc = "Buffer diagnostics" },
+    },
     config = function()
       require("trouble").setup()
     end,

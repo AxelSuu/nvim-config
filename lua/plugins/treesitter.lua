@@ -48,6 +48,7 @@ return {
   {
     "nvim-treesitter/nvim-treesitter-textobjects",
     dependencies = { "nvim-treesitter/nvim-treesitter" },
+    event = "VeryLazy",
     config = function()
       require("nvim-treesitter-textobjects").setup({
         select = { lookahead = true },

@@ -14,9 +14,6 @@ map("v", ">", ">gv")
 map("v", "J", ":m '>+1<CR>gv=gv")
 map("v", "K", ":m '<-2<CR>gv=gv")
 
--- File tree
-map("n", "<leader>e", "<cmd>NvimTreeToggle<CR>")
-
 -- Diagnostics ([d ]d are built in; LSP maps are set on LspAttach, see plugins/lsp.lua)
 map("n", "<leader>d", vim.diagnostic.open_float)
 vim.diagnostic.config({ virtual_text = { current_line = true }, severity_sort = true })
@@ -25,10 +22,6 @@ vim.diagnostic.config({ virtual_text = { current_line = true }, severity_sort = 
 map("n", "<leader>ih", function()
   vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled())
 end, { desc = "Toggle inlay hints" })
-
--- Trouble (diagnostics panel)
-map("n", "<leader>xx", "<cmd>Trouble diagnostics toggle<CR>")
-map("n", "<leader>xd", "<cmd>Trouble diagnostics toggle filter.buf=0<CR>")
 
 -- Undo tree (built in)
 map("n", "<leader>u", "<cmd>Undotree<CR>")
