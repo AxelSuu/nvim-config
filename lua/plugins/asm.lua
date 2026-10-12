@@ -1,7 +1,9 @@
 return {
   {
-    "0xdeadf1sh/AssemblyForNeovim",
-    dev = true, -- local esp-support branch until it is upstream
+    -- Fork with ESP-IDF / cross GCC support; ~/github/AssemblyForNeovim is used instead when present
+    "AxelSuu/AssemblyForNeovim",
+    branch = "esp-support",
+    dev = true,
     cmd = "Asm",
     keys = {
       { "<leader>A", mode = "n", desc = "Assembly for function" },
