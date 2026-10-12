@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# Hardware-in-the-loop tests: build, then flash and run the project's pytest_*.py on the board.
+# Usage: esp-test [port] [extra pytest args...]   run from an ESP-IDF project directory.
+set -euo pipefail
+
+port=${1:-}
+shift || true
+here=$(cd "$(dirname "$0")" && pwd)
+activate=$(ls ~/.espressif/tools/activate_idf_v*.sh 2>/dev/null | tail -1)
+[ -n "$activate" ] || { echo "ESP-IDF activation script not found" >&2; exit 1; }
+[ -f sdkconfig ] || { echo "no sdkconfig: run from a configured ESP-IDF project (idf.py set-target)" >&2; exit 1; }
+compgen -G "pytest_*.py" >/dev/null || { echo "no pytest_*.py in this project" >&2; exit 1; }
+target=$(sed -n 's/^CONFIG_IDF_TARGET="\(.*\)"$/\1/p' sdkconfig)
+if [ -z "$port" ]; then
+  for p in /dev/ttyACM* /dev/ttyUSB*; do [ -e "$p" ] && { port=$p; break; }; done
+fi
+[ -n "$port" ] || { echo "no serial port found (attach the board: Neovim Space Eu)" >&2; exit 1; }
+
+# The activation script only accepts being sourced from a shell named bash/sh, not from this script
+in_idf_env() {
+  bash -c 'a=$1; shift; . "$a" >/dev/null && exec "$@"' bash "$activate" "$@"
+}
+
+in_idf_env sh -c 'python "$IDF_PATH/tools/idf.py" build'
+# esp_nvim_pytest provides the helper fixtures examples take from ESP-IDF's CI-only conftest
+PYTHONPATH="$here/../python:${PYTHONPATH:-}" in_idf_env python -m pytest pytest_*.py \
+  -p esp_nvim_pytest -p no:cacheprovider -m "not host_test" \
+  --target "$target" --port "$port" --build-dir build --embedded-services esp,idf "$@"

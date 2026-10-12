@@ -183,4 +183,31 @@ function M.elf_asm()
   )
 end
 
+-- Hardware-in-the-loop tests: bin/esp-test builds and runs the project's pytest_*.py on the board
+function M.run_tests()
+  local root = util.project_root()
+  if #vim.fn.glob(root .. "/pytest_*.py", false, true) == 0 then
+    return vim.notify("No pytest_*.py in " .. root, vim.log.levels.WARN)
+  end
+  local argv = { vim.fn.stdpath("config") .. "/bin/esp-test" }
+  local port = require("esp.board").port(root)
+  if port then
+    argv[2] = port
+  end
+  runner.term(argv, {
+    uses_port = true,
+    on_exit = function(buf)
+      local summary
+      for _, l in ipairs(vim.api.nvim_buf_get_lines(buf, 0, -1, false)) do
+        summary = l:match("=+ (.-%d+ %a+.-) =+") or summary
+      end
+      local failed = not summary or summary:find("failed") or summary:find("error")
+      vim.notify(
+        "ESP tests: " .. (summary or "did not run, see the panel"),
+        failed and vim.log.levels.ERROR or nil
+      )
+    end,
+  })
+end
+
 return M

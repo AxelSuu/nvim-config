@@ -194,6 +194,32 @@ local function release_port()
   serial_terms = {}
 end
 
+-- Any other command in the same panel, sharing the serial port handling
+function M.term(argv, opts)
+  opts = opts or {}
+  if opts.uses_port then
+    release_port()
+  end
+  local term = Snacks.terminal.open(argv, {
+    cwd = util.project_root(),
+    auto_close = false,
+    win = { position = "bottom", height = 0.35 },
+  })
+  if opts.uses_port then
+    table.insert(serial_terms, term)
+  end
+  if opts.on_exit then
+    vim.api.nvim_create_autocmd("TermClose", {
+      buffer = term.buf,
+      once = true,
+      callback = vim.schedule_wrap(function()
+        opts.on_exit(term.buf)
+      end),
+    })
+  end
+  return term
+end
+
 function M.idf(args, on_exit)
   local root = util.project_root()
   local port = board.port(root)
