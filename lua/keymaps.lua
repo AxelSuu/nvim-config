@@ -19,6 +19,12 @@ map("n", "<leader>e", "<cmd>NvimTreeToggle<CR>")
 
 -- Diagnostics ([d ]d are built in; LSP maps are set on LspAttach, see plugins/lsp.lua)
 map("n", "<leader>d", vim.diagnostic.open_float)
+vim.diagnostic.config({ virtual_text = { current_line = true }, severity_sort = true })
+
+-- Inlay hints (types, parameter names)
+map("n", "<leader>ih", function()
+  vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled())
+end, { desc = "Toggle inlay hints" })
 
 -- Trouble (diagnostics panel)
 map("n", "<leader>xx", "<cmd>Trouble diagnostics toggle<CR>")
