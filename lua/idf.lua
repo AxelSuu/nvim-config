@@ -336,6 +336,87 @@ local function new_from_example()
   })
 end
 
+-- Assembly of the function under the cursor as it is in the built firmware (after linking),
+-- with source lines and real addresses. Space A shows the compiler output instead.
+local function function_name()
+  local node = vim.treesitter.get_node()
+  while node and node:type() ~= "function_definition" do
+    node = node:parent()
+  end
+  local decl = node and node:field("declarator")[1]
+  while decl and decl:field("declarator")[1] do
+    decl = decl:field("declarator")[1]
+  end
+  return decl and vim.treesitter.get_node_text(decl, 0)
+end
+
+local function show_float(title, lines)
+  local buf = vim.api.nvim_create_buf(false, true)
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+  vim.bo[buf].filetype = "asm"
+  vim.bo[buf].modifiable = false
+  vim.bo[buf].bufhidden = "wipe"
+  local w = math.min(110, math.floor(vim.o.columns * 0.85))
+  local h = math.min(40, math.floor(vim.o.lines * 0.8))
+  local win = vim.api.nvim_open_win(buf, true, {
+    relative = "editor",
+    width = w,
+    height = h,
+    row = math.floor((vim.o.lines - h) / 2) - 1,
+    col = math.floor((vim.o.columns - w) / 2),
+    border = "rounded",
+    title = title,
+  })
+  vim.wo[win].cursorline = true
+  for _, key in ipairs({ "q", "<Esc>" }) do
+    vim.keymap.set("n", key, "<cmd>close<CR>", { buffer = buf, nowait = true })
+  end
+end
+
+local function elf_asm()
+  local root = project_root()
+  local name = function_name()
+  local elf = vim.fn.glob(root .. "/build/*.elf", false, true)[1]
+  if not name then
+    return vim.notify("Cursor is not inside a function", vim.log.levels.WARN)
+  end
+  if not elf then
+    return vim.notify("No build/*.elf yet, build first (Space Eb)", vim.log.levels.WARN)
+  end
+  -- objdump from the same toolchain as the compiler in compile_commands.json
+  local ok, head = pcall(vim.fn.readfile, root .. "/build/compile_commands.json", "", 20)
+  local gcc = ok and table.concat(head, "\n"):match('"command": "(%S-g[c+][c+])%s')
+  local objdump = gcc and gcc:gsub("g[c+][c+]$", "objdump")
+  if not objdump or vim.fn.executable(objdump) == 0 then
+    return vim.notify("Could not find the toolchain objdump", vim.log.levels.ERROR)
+  end
+  if vim.uv.fs_stat(elf).mtime.sec < vim.uv.fs_stat(vim.api.nvim_buf_get_name(0)).mtime.sec then
+    vim.notify("Firmware is older than this file, showing the last build", vim.log.levels.WARN)
+  end
+  local cmd = { objdump, "-d", "-S", "-l", "--no-show-raw-insn", "--disassemble=" .. name, elf }
+  vim.system(
+    cmd,
+    { text = true },
+    vim.schedule_wrap(function(res)
+      local lines, started = {}, false
+      for _, line in ipairs(vim.split(res.stdout or "", "\n")) do
+        started = started or line:match("^%x+ <") ~= nil
+        if started then
+          -- full source paths -> file:line
+          lines[#lines + 1] = (line:gsub("^/%S+/([^/]+:%d+)$", "%1"))
+        end
+      end
+      if #lines == 0 then
+        return vim.notify(
+          name .. " is not in the firmware (inlined or removed by the optimiser)",
+          vim.log.levels.WARN
+        )
+      end
+      show_float((" %s  ·  %s  ·  q to close "):format(name, vim.fs.basename(elf)), lines)
+    end)
+  )
+end
+
 vim.api.nvim_create_user_command("Idf", function(o)
   idf(o.args)
 end, {
@@ -370,3 +451,4 @@ vim.keymap.set("n", "<leader>Et", pick_target, { desc = "Set target chip" })
 vim.keymap.set("n", "<leader>Ea", pick_action, { desc = "More idf.py actions" })
 vim.keymap.set("n", "<leader>Ed", docs, { desc = "ESP-IDF docs for word under cursor" })
 vim.keymap.set("n", "<leader>En", new_from_example, { desc = "New project from example" })
+vim.keymap.set("n", "<leader>EA", elf_asm, { desc = "Assembly of function from built firmware" })
