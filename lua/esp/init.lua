@@ -56,3 +56,4 @@ vim.api.nvim_create_autocmd("BufWritePost", {
 map("<leader>Ek", require("esp.coredump").read, "Read core dump from flash")
 map("<leader>Eq", idf("qemu monitor"), "Run in QEMU (ESP32, C3, S3)")
 map("<leader>EC", require("esp.config").search, "Search and change sdkconfig options")
+map("<leader>EG", require("esp.ci").write_workflow, "GitHub Actions build workflow")
