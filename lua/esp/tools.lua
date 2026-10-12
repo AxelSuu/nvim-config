@@ -210,4 +210,55 @@ function M.run_tests()
   })
 end
 
+-- Component registry: search, README preview, add-dependency, reconfigure (downloads it)
+function M.add_component()
+  vim.ui.input({ prompt = "Search ESP components: " }, function(query)
+    if not query or query == "" then
+      return
+    end
+    local url = "https://components.espressif.com/api/components?per_page=50&q="
+      .. vim.uri_encode(query)
+    vim.system(
+      { "curl", "-sf", "-m", "20", url },
+      { text = true },
+      vim.schedule_wrap(function(res)
+        local ok, list = pcall(vim.json.decode, res.stdout or "")
+        if res.code ~= 0 or not ok or type(list) ~= "table" or #list == 0 then
+          return vim.notify("No components found for " .. query, vim.log.levels.WARN)
+        end
+        local entries = {}
+        for _, c in ipairs(list) do
+          local v = c.latest_version or {}
+          local desc = (v.description or ""):gsub("[\t\n]", " ")
+          local readme = v.docs and v.docs.readme or ""
+          entries[#entries + 1] =
+            table.concat({ c.namespace .. "/" .. c.name, v.version or "?", desc, readme }, "\t")
+        end
+        require("fzf-lua").fzf_exec(entries, {
+          prompt = "Component> ",
+          fzf_opts = { ["--delimiter"] = "\t", ["--with-nth"] = "1..3" },
+          preview = "curl -sf -m 10 {4} | batcat --style=plain --color=always -l md",
+          actions = {
+            default = function(selected)
+              local fields = selected and selected[1] and vim.split(selected[1], "\t")
+              if not fields then
+                return
+              end
+              local spec = ('"%s^%s"'):format(fields[1], (fields[2]:gsub("~.*$", "")))
+              runner.idf("add-dependency " .. spec, function()
+                runner.idf("reconfigure", function()
+                  vim.cmd("lsp restart clangd")
+                  vim.notify(
+                    "Added " .. fields[1] .. " " .. fields[2] .. " (main/idf_component.yml)"
+                  )
+                end)
+              end)
+            end,
+          },
+        })
+      end)
+    )
+  end)
+end
+
 return M
