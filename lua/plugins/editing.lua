@@ -21,6 +21,7 @@ return {
         { "<leader>a", group = "ai" },
         { "<leader>c", group = "code" },
         { "<leader>D", group = "debug" },
+        { "<leader>E", group = "esp-idf" },
         { "<leader>f", group = "find" },
         { "<leader>g", group = "git" },
         { "<leader>h", group = "git hunk" },

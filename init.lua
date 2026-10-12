@@ -24,3 +24,5 @@ require("lazy").setup("plugins", { rocks = { enabled = false } })
 -- Built-in optional plugins (Nvim 0.12), after lazy resets the runtimepath
 vim.cmd.packadd("nvim.undotree")
 vim.cmd.packadd("nvim.difftool")
+
+require("idf")
