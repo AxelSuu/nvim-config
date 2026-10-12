@@ -1,6 +1,7 @@
 return {
   {
     "0xdeadf1sh/AssemblyForNeovim",
+    dev = true, -- local esp-support branch until it is upstream
     cmd = "Asm",
     keys = {
       { "<leader>A", mode = "n", desc = "Assembly for function" },

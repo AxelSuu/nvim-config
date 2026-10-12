@@ -19,7 +19,11 @@ vim.g.maplocalleader = " "
 -- Load options, keymaps, and plugins
 require("options")
 require("keymaps")
-require("lazy").setup("plugins", { rocks = { enabled = false } })
+-- dev = true plugins load from ~/github/<name> when it exists (local forks), else from GitHub
+require("lazy").setup("plugins", {
+  rocks = { enabled = false },
+  dev = { path = "~/github", fallback = true },
+})
 
 -- Built-in optional plugins (Nvim 0.12), after lazy resets the runtimepath
 vim.cmd.packadd("nvim.undotree")
