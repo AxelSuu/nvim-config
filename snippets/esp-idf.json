@@ -1,0 +1,272 @@
+{
+  "app_main": {
+    "prefix": "appmain",
+    "body": [
+      "void app_main(void)",
+      "{",
+      "\t$0",
+      "}"
+    ],
+    "description": "ESP-IDF entry point"
+  },
+  "TAG": {
+    "prefix": "tag",
+    "body": [
+      "static const char *TAG = \"${1:${TM_FILENAME_BASE}}\";"
+    ],
+    "description": "Log tag for ESP_LOGx"
+  },
+  "ESP_LOGI": {
+    "prefix": "logi",
+    "body": [
+      "ESP_LOGI(TAG, \"${1:message}\"${2:, ${3:args}});"
+    ],
+    "description": "Info log"
+  },
+  "ESP_LOGW": {
+    "prefix": "logw",
+    "body": [
+      "ESP_LOGW(TAG, \"${1:message}\"${2:, ${3:args}});"
+    ],
+    "description": "Warning log"
+  },
+  "ESP_LOGE": {
+    "prefix": "loge",
+    "body": [
+      "ESP_LOGE(TAG, \"${1:message}\"${2:, ${3:args}});"
+    ],
+    "description": "Error log"
+  },
+  "ESP_LOGD": {
+    "prefix": "logd",
+    "body": [
+      "ESP_LOGD(TAG, \"${1:message}\"${2:, ${3:args}});"
+    ],
+    "description": "Debug log"
+  },
+  "ESP_ERROR_CHECK": {
+    "prefix": "errchk",
+    "body": [
+      "ESP_ERROR_CHECK(${1:call});"
+    ],
+    "description": "Abort on error (esp_err_t)"
+  },
+  "ESP_RETURN_ON_ERROR": {
+    "prefix": "retonerr",
+    "body": [
+      "ESP_RETURN_ON_ERROR(${1:call}, TAG, \"${2:what failed}\");"
+    ],
+    "description": "Return the error with a log (esp_check.h)"
+  },
+  "ESP_GOTO_ON_ERROR": {
+    "prefix": "gotoonerr",
+    "body": [
+      "ESP_GOTO_ON_ERROR(${1:call}, ${2:err}, TAG, \"${3:what failed}\");"
+    ],
+    "description": "Set ret and goto label on error (esp_check.h, needs esp_err_t ret)"
+  },
+  "vTaskDelay ms": {
+    "prefix": "delayms",
+    "body": [
+      "vTaskDelay(pdMS_TO_TICKS(${1:100}));"
+    ],
+    "description": "Delay in milliseconds"
+  },
+  "Task": {
+    "prefix": "xtask",
+    "body": [
+      "static void ${1:worker}_task(void *arg)",
+      "{",
+      "\twhile (1) {",
+      "\t\t$0",
+      "\t\tvTaskDelay(pdMS_TO_TICKS(${2:1000}));",
+      "\t}",
+      "}",
+      "",
+      "xTaskCreate(${1}_task, \"${1}\", ${3:4096}, NULL, ${4:5}, NULL);"
+    ],
+    "description": "FreeRTOS task function and xTaskCreate"
+  },
+  "Task pinned": {
+    "prefix": "xtaskpin",
+    "body": [
+      "xTaskCreatePinnedToCore(${1:worker}_task, \"${1}\", ${2:4096}, ${3:NULL}, ${4:5}, ${5:NULL}, ${6:1});"
+    ],
+    "description": "Task pinned to a core"
+  },
+  "Queue": {
+    "prefix": "xqueue",
+    "body": [
+      "QueueHandle_t ${1:queue} = xQueueCreate(${2:10}, sizeof(${3:int}));",
+      "$3 ${4:item};",
+      "xQueueSend(${1}, &${4}, portMAX_DELAY);",
+      "if (xQueueReceive(${1}, &${4}, pdMS_TO_TICKS(${5:100})) == pdTRUE) {",
+      "\t$0",
+      "}"
+    ],
+    "description": "Queue create, send, receive"
+  },
+  "Binary semaphore": {
+    "prefix": "xsem",
+    "body": [
+      "SemaphoreHandle_t ${1:sem} = xSemaphoreCreateBinary();",
+      "xSemaphoreGive(${1});",
+      "if (xSemaphoreTake(${1}, portMAX_DELAY) == pdTRUE) {",
+      "\t$0",
+      "}"
+    ],
+    "description": "Binary semaphore"
+  },
+  "Mutex": {
+    "prefix": "xmutex",
+    "body": [
+      "static SemaphoreHandle_t ${1:lock};",
+      "${1} = xSemaphoreCreateMutex();",
+      "xSemaphoreTake(${1}, portMAX_DELAY);",
+      "$0",
+      "xSemaphoreGive(${1});"
+    ],
+    "description": "Mutex around a critical section (not from ISRs)"
+  },
+  "Event group": {
+    "prefix": "xevt",
+    "body": [
+      "#define ${1:READY}_BIT BIT0",
+      "EventGroupHandle_t ${2:events} = xEventGroupCreate();",
+      "xEventGroupSetBits(${2}, ${1}_BIT);",
+      "EventBits_t bits = xEventGroupWaitBits(${2}, ${1}_BIT, pdTRUE, pdFALSE, portMAX_DELAY);"
+    ],
+    "description": "Event group set and wait"
+  },
+  "Software timer": {
+    "prefix": "xtimer",
+    "body": [
+      "static void ${1:tick}_cb(TimerHandle_t timer)",
+      "{",
+      "\t$0",
+      "}",
+      "",
+      "TimerHandle_t ${1}_timer = xTimerCreate(\"${1}\", pdMS_TO_TICKS(${2:1000}), pdTRUE, NULL, ${1}_cb);",
+      "xTimerStart(${1}_timer, 0);"
+    ],
+    "description": "FreeRTOS software timer (runs in the timer task)"
+  },
+  "esp_timer periodic": {
+    "prefix": "esptimer",
+    "body": [
+      "static void ${1:periodic}_cb(void *arg)",
+      "{",
+      "\t$0",
+      "}",
+      "",
+      "const esp_timer_create_args_t ${1}_args = { .callback = ${1}_cb, .name = \"${1}\" };",
+      "esp_timer_handle_t ${1}_timer;",
+      "ESP_ERROR_CHECK(esp_timer_create(&${1}_args, &${1}_timer));",
+      "ESP_ERROR_CHECK(esp_timer_start_periodic(${1}_timer, ${2:1000000})); // microseconds"
+    ],
+    "description": "High resolution periodic esp_timer"
+  },
+  "Task notification": {
+    "prefix": "xnotify",
+    "body": [
+      "// in the waiting task",
+      "uint32_t ${1:count} = ulTaskNotifyTake(pdTRUE, portMAX_DELAY);",
+      "// from another task",
+      "xTaskNotifyGive(${2:task_handle});"
+    ],
+    "description": "Lightweight task notification (counting semaphore style)"
+  },
+  "GPIO ISR to task": {
+    "prefix": "isr",
+    "body": [
+      "static QueueHandle_t ${1:gpio}_evt_queue;",
+      "",
+      "static void IRAM_ATTR ${1}_isr(void *arg)",
+      "{",
+      "\tuint32_t pin = (uint32_t)arg;",
+      "\tBaseType_t woken = pdFALSE;",
+      "\txQueueSendFromISR(${1}_evt_queue, &pin, &woken);",
+      "\tportYIELD_FROM_ISR(woken);",
+      "}",
+      "",
+      "${1}_evt_queue = xQueueCreate(10, sizeof(uint32_t));",
+      "ESP_ERROR_CHECK(gpio_install_isr_service(0));",
+      "ESP_ERROR_CHECK(gpio_isr_handler_add(${2:GPIO_NUM_0}, ${1}_isr, (void *)${2}));"
+    ],
+    "description": "ISR that defers work to a task through a queue"
+  },
+  "Critical section": {
+    "prefix": "critical",
+    "body": [
+      "static portMUX_TYPE ${1:spinlock} = portMUX_INITIALIZER_UNLOCKED;",
+      "taskENTER_CRITICAL(&${1});",
+      "$0",
+      "taskEXIT_CRITICAL(&${1});"
+    ],
+    "description": "Spinlock critical section (keep it short, works across cores)"
+  },
+  "GPIO output": {
+    "prefix": "gpioout",
+    "body": [
+      "const gpio_config_t ${1:led}_conf = {",
+      "\t.pin_bit_mask = 1ULL << ${2:GPIO_NUM_2},",
+      "\t.mode = GPIO_MODE_OUTPUT,",
+      "};",
+      "ESP_ERROR_CHECK(gpio_config(&${1}_conf));",
+      "gpio_set_level(${2}, ${3:1});"
+    ],
+    "description": "Configure a pin as output"
+  },
+  "GPIO input": {
+    "prefix": "gpioin",
+    "body": [
+      "const gpio_config_t ${1:button}_conf = {",
+      "\t.pin_bit_mask = 1ULL << ${2:GPIO_NUM_0},",
+      "\t.mode = GPIO_MODE_INPUT,",
+      "\t.pull_up_en = GPIO_PULLUP_ENABLE,",
+      "\t.intr_type = ${3:GPIO_INTR_NEGEDGE},",
+      "};",
+      "ESP_ERROR_CHECK(gpio_config(&${1}_conf));"
+    ],
+    "description": "Configure a pin as input with pull-up and interrupt type"
+  },
+  "NVS init": {
+    "prefix": "nvsinit",
+    "body": [
+      "esp_err_t ret = nvs_flash_init();",
+      "if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {",
+      "\tESP_ERROR_CHECK(nvs_flash_erase());",
+      "\tret = nvs_flash_init();",
+      "}",
+      "ESP_ERROR_CHECK(ret);"
+    ],
+    "description": "NVS init with erase on version change"
+  },
+  "NVS read/write": {
+    "prefix": "nvsrw",
+    "body": [
+      "nvs_handle_t ${1:nvs};",
+      "ESP_ERROR_CHECK(nvs_open(\"${2:storage}\", NVS_READWRITE, &${1}));",
+      "int32_t ${3:value} = 0;",
+      "nvs_get_i32(${1}, \"${4:key}\", &${3});",
+      "ESP_ERROR_CHECK(nvs_set_i32(${1}, \"${4}\", ${3}));",
+      "ESP_ERROR_CHECK(nvs_commit(${1}));",
+      "nvs_close(${1});"
+    ],
+    "description": "Open, read, write and commit an NVS value"
+  },
+  "Stack high water mark": {
+    "prefix": "stackhwm",
+    "body": [
+      "ESP_LOGI(TAG, \"stack free: %u words\", (unsigned)uxTaskGetStackHighWaterMark(NULL));"
+    ],
+    "description": "Log how much of this task's stack was never used"
+  },
+  "Heap info": {
+    "prefix": "heapinfo",
+    "body": [
+      "ESP_LOGI(TAG, \"heap free %u, min ever %u\", (unsigned)esp_get_free_heap_size(), (unsigned)esp_get_minimum_free_heap_size());"
+    ],
+    "description": "Log free and minimum free heap"
+  }
+}
