@@ -38,6 +38,7 @@ local actions = {
   { "reconfigure", "Re-run CMake (refreshes compile_commands.json)" },
   { "save-defconfig", "Save current config as sdkconfig.defaults" },
   { "fullclean", "Delete the build directory" },
+  { "qemu --gdb monitor", "Run in QEMU waiting for the debugger (then F5: attach to QEMU)" },
 }
 
 function M.pick_action()

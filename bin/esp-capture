@@ -1,9 +1,12 @@
 #!/usr/bin/env bash
 # Capture device output without a terminal (for Claude Code / scripts).
-# Usage: esp-capture [seconds=15] [port]   run from an ESP-IDF project directory.
+# Usage: esp-capture [--qemu] [seconds=15] [port]   run from an ESP-IDF project directory.
 # Resets the chip (like idf.py monitor does), prints clean text, writes build/capture.log.
+# --qemu runs the built firmware in QEMU instead (ESP32, C3, S3), no board needed.
 set -euo pipefail
 
+qemu=
+if [ "${1:-}" = "--qemu" ]; then qemu=1; shift; fi
 secs=${1:-15}
 port=${2:-}
 activate=$(ls ~/.espressif/tools/activate_idf_v*.sh 2>/dev/null | tail -1)
@@ -11,7 +14,15 @@ activate=$(ls ~/.espressif/tools/activate_idf_v*.sh 2>/dev/null | tail -1)
 [ -f sdkconfig ] || [ -f CMakeLists.txt ] || { echo "run from an ESP-IDF project directory" >&2; exit 1; }
 
 port_arg=${port:+-p $port}
-cmd=". $activate >/dev/null && timeout $secs python \"\$IDF_PATH/tools/idf.py\" $port_arg monitor"
+action="$port_arg monitor"
+env=
+if [ -n "$qemu" ]; then
+  # QEMU is not on the activation script's PATH; its SDL2/slirp libs live in a private folder
+  bins=$(ls -d ~/.espressif/tools/tools/qemu-*/*/qemu/bin 2>/dev/null | paste -sd:)
+  env="export PATH=$bins:\$PATH LD_LIBRARY_PATH=$HOME/.espressif/tools/qemu-libs/root/usr/lib/x86_64-linux-gnu;"
+  action="qemu monitor"
+fi
+cmd=". $activate >/dev/null && $env timeout $secs python \"\$IDF_PATH/tools/idf.py\" $action"
 mkdir -p build
 # script gives idf.py monitor the terminal it needs; sed strips colors and carriage returns
 script -q -f -c "$cmd" /dev/null </dev/null \

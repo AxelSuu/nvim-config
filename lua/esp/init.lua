@@ -54,3 +54,4 @@ vim.api.nvim_create_autocmd("BufWritePost", {
   end,
 })
 map("<leader>Ek", require("esp.coredump").read, "Read core dump from flash")
+map("<leader>Eq", idf("qemu monitor"), "Run in QEMU (ESP32, C3, S3)")

@@ -189,30 +189,52 @@ function M.with_log(cmd, root, log)
   }
 end
 
--- Only one process can hold the serial port: a new flash/monitor stops the previous one
-local serial_terms = {}
+-- Only one process can hold the serial port (and one QEMU its gdb/serial sockets): starting a new
+-- one stops the previous. QEMU sessions also stop when Neovim exits (idf.py qemu outlives it).
+local sessions = { serial = {}, qemu = {} }
 
-local function uses_port(args)
-  return args:find("flash") or args:find("monitor") or args:find("erase")
+local function session_kind(args)
+  if args:find("qemu") then
+    return "qemu"
+  elseif args:find("flash") or args:find("monitor") or args:find("erase") then
+    return "serial"
+  end
 end
 
-local function release_port()
-  for _, term in ipairs(serial_terms) do
+-- `script` (used for the monitor log) starts its child in a new session, so a process group kill
+-- misses it: terminate every descendant instead
+local function kill_tree(pid)
+  for _, child in ipairs(vim.api.nvim_get_proc_children(pid)) do
+    kill_tree(child)
+  end
+  pcall(vim.uv.kill, pid, "sigkill") -- script ignores SIGTERM and spins once its terminal is gone
+end
+
+local function stop_sessions(kind)
+  for _, term in ipairs(sessions[kind]) do
     local job = vim.api.nvim_buf_is_valid(term.buf) and vim.b[term.buf].terminal_job_id
     if job and vim.fn.jobwait({ job }, 0)[1] == -1 then
+      kill_tree(vim.fn.jobpid(job))
       vim.fn.jobstop(job)
       vim.fn.jobwait({ job }, 3000)
     end
-    term:close()
+    pcall(term.close, term)
   end
-  serial_terms = {}
+  sessions[kind] = {}
 end
+
+vim.api.nvim_create_autocmd("VimLeavePre", {
+  callback = function()
+    stop_sessions("qemu")
+    stop_sessions("serial")
+  end,
+})
 
 -- Any other command in the same panel, sharing the serial port handling
 function M.term(argv, opts)
   opts = opts or {}
   if opts.uses_port then
-    release_port()
+    stop_sessions("serial")
   end
   local term = Snacks.terminal.open(argv, {
     cwd = util.project_root(),
@@ -220,7 +242,7 @@ function M.term(argv, opts)
     win = { position = "bottom", height = 0.35 },
   })
   if opts.uses_port then
-    table.insert(serial_terms, term)
+    table.insert(sessions.serial, term)
   end
   if opts.on_exit then
     vim.api.nvim_create_autocmd("TermClose", {
@@ -236,14 +258,15 @@ end
 
 function M.idf(args, on_exit)
   local root = util.project_root()
-  local port = board.port(root)
+  local port = not args:find("qemu") and board.port(root) or nil
   local cmd = util.idf_cmd((port and ("-p " .. vim.fn.shellescape(port) .. " ") or "") .. args)
   if not cmd then
     return
   end
   local since = os.time()
-  if uses_port(args) then
-    release_port()
+  local kind = session_kind(args)
+  if kind then
+    stop_sessions(kind)
   end
   local argv = args:find("monitor") and M.with_log(cmd, root, "monitor.log") or { "sh", "-c", cmd }
   local term = Snacks.terminal.open(argv, {
@@ -251,8 +274,8 @@ function M.idf(args, on_exit)
     auto_close = false,
     win = { position = "bottom", height = 0.35 },
   })
-  if uses_port(args) then
-    table.insert(serial_terms, term)
+  if kind then
+    table.insert(sessions[kind], term)
   end
   if args:find("monitor") then
     watch_crashes(term.buf)

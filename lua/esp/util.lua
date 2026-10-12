@@ -21,8 +21,24 @@ function M.shell(cmd)
   return (". %s >/dev/null && %s"):format(vim.fn.shellescape(script), cmd)
 end
 
+-- Espressif QEMU is installed with idf_tools.py but not on the activation script's PATH; its
+-- SDL2/slirp libraries live in a private folder (no sudo needed)
+local function qemu_env()
+  local tools = vim.fn.expand("~/.espressif/tools")
+  local bins = vim.fn.glob(tools .. "/tools/qemu-*/*/qemu/bin", false, true)
+  local libs = tools .. "/qemu-libs/root/usr/lib/x86_64-linux-gnu"
+  if #bins == 0 then
+    return ""
+  end
+  return ("export PATH=%s:$PATH LD_LIBRARY_PATH=%s${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}; "):format(
+    table.concat(bins, ":"),
+    libs
+  )
+end
+
 function M.idf_cmd(args)
-  return M.shell('python "$IDF_PATH/tools/idf.py" ' .. args)
+  local env = args:find("qemu") and qemu_env() or ""
+  return M.shell(env .. 'python "$IDF_PATH/tools/idf.py" ' .. args)
 end
 
 function M.project_root()

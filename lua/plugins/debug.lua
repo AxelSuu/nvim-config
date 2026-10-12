@@ -128,18 +128,25 @@ return {
         type = "esp_gdb",
         request = "attach",
         target = "localhost:3333",
+        reset_halt = true,
         program = function()
           local elf = vim.fn.glob("build/*.elf", false, true)
           return elf[1] or pick_program()
         end,
       }
-      dap.configurations.c = { lldb, esp }
-      dap.configurations.cpp = { lldb, esp }
+      -- idf.py qemu --gdb (Space Ea) waits for gdb on :3333 too, but there is no chip to reset
+      local qemu = vim.tbl_extend(
+        "force",
+        esp,
+        { name = "ESP-IDF: attach to QEMU (idf.py qemu --gdb)", reset_halt = false }
+      )
+      dap.configurations.c = { lldb, esp, qemu }
+      dap.configurations.cpp = { lldb, esp, qemu }
       dap.configurations.rust = { vim.tbl_extend("force", lldb, { sourceLanguages = { "rust" } }) }
 
       -- ESP-IDF's recommended gdb startup: reset and halt the chip after attaching
       dap.listeners.after.attach.esp_reset = function(session)
-        if session.config.type ~= "esp_gdb" then
+        if not session.config.reset_halt then
           return
         end
         for _, cmd in ipairs({ "monitor reset halt", "maintenance flush register-cache" }) do
