@@ -253,6 +253,12 @@ function M.idf(args, on_exit)
         if not ok then
           vim.notify("ESP-IDF: could not read build log: " .. err, vim.log.levels.WARN)
         end
+        -- relinked firmware: report size changes
+        local map = vim.fn.glob(root .. "/build/*.map", false, true)[1]
+        local st = map and vim.uv.fs_stat(map)
+        if st and st.mtime.sec >= since then
+          require("esp.size").after_build(root)
+        end
       end
       if on_exit then
         on_exit()
