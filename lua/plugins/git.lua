@@ -34,4 +34,15 @@ return {
       })
     end,
   },
+  {
+    "esmuellert/codediff.nvim",
+    cmd = "CodeDiff",
+    keys = {
+      { "<leader>gd", "<cmd>CodeDiff<CR>", desc = "Diff working tree" },
+      { "<leader>gs", "<cmd>CodeDiff --staged<CR>", desc = "Diff staged" },
+      { "<leader>gl", "<cmd>CodeDiff history<CR>", desc = "Commit history" },
+      { "<leader>gf", "<cmd>CodeDiff history %<CR>", desc = "File history" },
+    },
+    opts = {},
+  },
 }

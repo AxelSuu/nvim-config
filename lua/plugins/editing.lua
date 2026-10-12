@@ -20,6 +20,7 @@ return {
       spec = {
         { "<leader>c", group = "code" },
         { "<leader>f", group = "find" },
+        { "<leader>g", group = "git" },
         { "<leader>h", group = "git hunk" },
         { "<leader>r", group = "rename" },
         { "<leader>x", group = "trouble" },
