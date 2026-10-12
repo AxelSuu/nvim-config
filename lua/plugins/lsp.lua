@@ -19,7 +19,7 @@ return {
     dependencies = { "mason-org/mason.nvim", "mason-org/mason-lspconfig.nvim" },
     config = function()
       require("mason-lspconfig").setup({
-        ensure_installed = { "lua_ls", "pyright", "clangd", "bashls", "vtsls" },
+        ensure_installed = { "lua_ls", "pyright", "clangd", "bashls", "vtsls", "rust_analyzer" },
         automatic_enable = false,
       })
 
@@ -52,7 +52,7 @@ return {
         settings = { ["rust-analyzer"] = { check = { command = "clippy" } } },
       })
 
-      -- rust-analyzer comes from rustup and ruff from uv, not mason
+      -- ruff comes from uv; rust-analyzer from mason so it works whatever toolchain a project pins
       vim.lsp.enable({ "lua_ls", "clangd", "pyright", "ruff", "rust_analyzer", "vtsls", "bashls" })
 
       vim.api.nvim_create_autocmd("LspAttach", {
