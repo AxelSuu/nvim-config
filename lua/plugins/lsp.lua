@@ -19,7 +19,7 @@ return {
     dependencies = { "mason-org/mason.nvim", "mason-org/mason-lspconfig.nvim" },
     config = function()
       require("mason-lspconfig").setup({
-        ensure_installed = { "lua_ls", "pyright", "clangd", "bashls", "vtsls", "rust_analyzer" },
+        ensure_installed = { "lua_ls", "pyright", "clangd", "bashls", "vtsls", "rust_analyzer", "eslint" },
         automatic_enable = false,
       })
 
@@ -48,12 +48,27 @@ return {
         end,
         filetypes = { "c", "cpp", "objc", "objcpp", "cuda" },
       })
+      -- ESLint only starts in projects with an ESLint config; fixes apply on save like formatting
+      local eslint_attach = vim.lsp.config.eslint.on_attach
+      vim.lsp.config("eslint", {
+        on_attach = function(client, bufnr)
+          eslint_attach(client, bufnr)
+          vim.api.nvim_create_autocmd("BufWritePre", {
+            buffer = bufnr,
+            callback = function()
+              if require("autoformat").enabled(bufnr) then
+                vim.cmd("LspEslintFixAll")
+              end
+            end,
+          })
+        end,
+      })
       vim.lsp.config("rust_analyzer", {
         settings = { ["rust-analyzer"] = { check = { command = "clippy" } } },
       })
 
       -- ruff comes from uv; rust-analyzer from mason so it works whatever toolchain a project pins
-      vim.lsp.enable({ "lua_ls", "clangd", "pyright", "ruff", "rust_analyzer", "vtsls", "bashls" })
+      vim.lsp.enable({ "lua_ls", "clangd", "pyright", "ruff", "rust_analyzer", "vtsls", "eslint", "bashls" })
 
       vim.api.nvim_create_autocmd("LspAttach", {
         callback = function(ev)
