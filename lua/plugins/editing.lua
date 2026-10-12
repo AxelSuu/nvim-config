@@ -70,6 +70,7 @@ return {
         "<cmd>Trouble diagnostics toggle filter.buf=0<CR>",
         desc = "Buffer diagnostics",
       },
+      { "<leader>xq", "<cmd>Trouble qflist toggle<CR>", desc = "Quickfix list (build errors)" },
     },
     config = function()
       require("trouble").setup()
