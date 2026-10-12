@@ -46,3 +46,10 @@ map("<leader>EI", require("esp.ai").init_project, "Init Claude Code context (.mc
 map("<leader>Ex", tools.run_tests, "Run hardware tests (pytest)")
 map("<leader>Er", tools.add_component, "Add component from the registry")
 map("<leader>Es", require("esp.size").show, "Firmware size per component")
+map("<leader>EP", require("esp.partitions").show, "Partition table")
+vim.api.nvim_create_autocmd("BufWritePost", {
+  pattern = "*.csv",
+  callback = function(ev)
+    require("esp.partitions").validate(ev.buf)
+  end,
+})
