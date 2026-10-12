@@ -19,6 +19,7 @@ return {
       preset = "helix",
       spec = {
         { "<leader>c", group = "code" },
+        { "<leader>D", group = "debug" },
         { "<leader>f", group = "find" },
         { "<leader>g", group = "git" },
         { "<leader>h", group = "git hunk" },
