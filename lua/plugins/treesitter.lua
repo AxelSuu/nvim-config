@@ -78,4 +78,10 @@ return {
       end
     end,
   },
+  {
+    -- Sticky function/struct header when scrolled inside long blocks
+    "nvim-treesitter/nvim-treesitter-context",
+    event = { "BufReadPost", "BufNewFile" },
+    opts = { max_lines = 3 },
+  },
 }
